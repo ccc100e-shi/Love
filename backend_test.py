@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ViralForge v3 Backend API Testing Suite
-Tests all endpoints for functionality and integration
+Tests the simplified single-endpoint API
 """
 import requests
 import json
@@ -9,7 +9,7 @@ import time
 import sys
 from datetime import datetime
 
-class ViralForgeAPITester:
+class ViralForgeV3Tester:
     def __init__(self, base_url="https://viral-forge-21.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
@@ -90,244 +90,189 @@ class ViralForgeAPITester:
             return True
         return False
 
-    def test_stats_endpoint(self):
-        """Test stats endpoint"""
-        success, response = self.run_test(
-            "Stats Endpoint",
-            "GET",
-            "/api/stats"
-        )
+    def test_generate_all_endpoint(self):
+        """Test the main generate-all endpoint"""
+        self.log("Testing generate-all endpoint (this may take 30-60 seconds)...")
         
-        if success:
-            expected_fields = ['trends_count', 'scripts_count', 'videos_count', 'fetch_status']
-            missing_fields = [f for f in expected_fields if f not in response]
-            if missing_fields:
-                self.log(f"❌ Stats endpoint missing fields: {missing_fields}", "FAIL")
-                return False
-            self.log(f"✅ Stats - Trends: {response.get('trends_count', 0)}, Scripts: {response.get('scripts_count', 0)}", "PASS")
-            return True
-        return False
-
-    def test_trends_fetch(self):
-        """Test trends fetching"""
-        self.log("Testing trends fetch (this may take 10-15 seconds)...")
-        
-        # Start fetch
+        # Test with valid prompt
         success, response = self.run_test(
-            "Fetch Trends Start",
+            "Generate All - Valid Prompt",
             "POST",
-            "/api/trends/fetch",
-            data={"categories": ["trending", "entertainment"], "force": False}
-        )
-        
-        if not success:
-            return False
-            
-        if response.get('status') not in ['started', 'already_running']:
-            self.log(f"❌ Unexpected fetch response: {response}", "FAIL")
-            return False
-            
-        # Poll for completion
-        max_attempts = 30  # 30 seconds max
-        for attempt in range(max_attempts):
-            time.sleep(1)
-            health_success, health_data = self.run_test(
-                f"Health Check (Poll {attempt+1})",
-                "GET",
-                "/api/health"
-            )
-            
-            if health_success:
-                fetch_status = health_data.get('fetch_status', 'unknown')
-                self.log(f"Fetch status: {fetch_status}")
-                
-                if fetch_status == 'done':
-                    self.log("✅ Trends fetch completed successfully", "PASS")
-                    return True
-                elif 'error' in fetch_status:
-                    self.log(f"❌ Trends fetch failed: {fetch_status}", "FAIL")
-                    return False
-                    
-        self.log("❌ Trends fetch timed out", "FAIL")
-        return False
-
-    def test_trends_endpoints(self):
-        """Test trends retrieval endpoints"""
-        # Test trends list
-        success, response = self.run_test(
-            "Get Trends List",
-            "GET",
-            "/api/trends?limit=10"
-        )
-        
-        if not success:
-            return False
-            
-        trends = response.get('trends', [])
-        if not trends:
-            self.log("⚠️  No trends data available", "WARN")
-            return True  # Not a failure if no data yet
-            
-        # Verify trend structure
-        first_trend = trends[0]
-        required_fields = ['id', 'title', 'virality_score', 'analysis']
-        missing_fields = [f for f in required_fields if f not in first_trend]
-        if missing_fields:
-            self.log(f"❌ Trend object missing fields: {missing_fields}", "FAIL")
-            return False
-            
-        self.log(f"✅ Retrieved {len(trends)} trends", "PASS")
-        
-        # Test patterns endpoint
-        success, response = self.run_test(
-            "Get Trends Patterns",
-            "GET",
-            "/api/trends/patterns"
-        )
-        
-        return success
-
-    def test_generation_pipeline(self):
-        """Test the full AI generation pipeline"""
-        self.log("Testing AI generation pipeline (this may take 30-60 seconds)...")
-        
-        success, response = self.run_test(
-            "AI Generation Pipeline",
-            "POST",
-            "/api/generate",
-            data={"niche": "tech"},
-            timeout=90  # Longer timeout for AI generation
+            "/api/generate-all",
+            data={"prompt": "Create a viral video about fitness motivation"},
+            timeout=10  # Just test if it starts, don't wait for completion
         )
         
         if not success:
             return False
             
         # Verify response structure
-        required_fields = ['batch_id', 'script_id', 'options', 'winner', 'decision', 'script']
-        missing_fields = [f for f in required_fields if f not in response]
-        if missing_fields:
-            self.log(f"❌ Generation response missing fields: {missing_fields}", "FAIL")
+        if 'job_id' not in response:
+            self.log("❌ Generate-all response missing job_id", "FAIL")
             return False
             
-        options = response.get('options', [])
-        if len(options) < 5:
-            self.log(f"❌ Expected at least 5 options, got {len(options)}", "FAIL")
+        if response.get('status') != 'processing':
+            self.log(f"❌ Expected status 'processing', got {response.get('status')}", "FAIL")
             return False
             
-        winner = response.get('winner', {})
-        if not winner.get('title') or not winner.get('hook'):
-            self.log("❌ Winner missing title or hook", "FAIL")
-            return False
-            
-        script = response.get('script', {})
-        if not script.get('scenes') or len(script.get('scenes', [])) < 3:
-            self.log("❌ Script missing scenes or too few scenes", "FAIL")
-            return False
-            
-        self.log(f"✅ Generated {len(options)} ideas, winner selected, script created", "PASS")
+        self.log(f"✅ Generate-all started successfully - Job ID: {response.get('job_id')}", "PASS")
+        self.test_job_id = response.get('job_id')
         
-        # Store script_id for video test
-        self.script_id = response.get('script_id')
-        self.test_script = script
-        return True
-
-    def test_scripts_endpoint(self):
-        """Test scripts listing endpoint"""
+        # Test with invalid prompt (empty)
         success, response = self.run_test(
-            "List Scripts",
-            "GET",
-            "/api/scripts"
+            "Generate All - Invalid Prompt",
+            "POST",
+            "/api/generate-all",
+            expected_status=400,
+            data={"prompt": ""}
         )
         
         if success:
-            scripts = response.get('scripts', [])
-            self.log(f"✅ Retrieved {len(scripts)} scripts", "PASS")
-            return True
-        return False
+            self.log("✅ Correctly rejected empty prompt", "PASS")
+        
+        return True
 
-    def test_video_generation(self):
-        """Test video generation pipeline"""
-        if not hasattr(self, 'script_id') or not hasattr(self, 'test_script'):
-            self.log("⚠️  Skipping video test - no script available", "WARN")
+    def test_job_status_endpoint(self):
+        """Test job status endpoint"""
+        if not hasattr(self, 'test_job_id'):
+            self.log("⚠️  Skipping job status test - no job_id available", "WARN")
             return True
             
-        self.log("Testing video generation (this may take 60+ seconds)...")
-        
         success, response = self.run_test(
-            "Start Video Generation",
-            "POST",
-            "/api/video/generate",
-            data={
-                "script_id": self.script_id,
-                "script": self.test_script,
-                "palette": "amber"
-            }
+            "Job Status Check",
+            "GET",
+            f"/api/job/{self.test_job_id}"
         )
         
         if not success:
             return False
             
-        video_id = response.get('video_id')
-        if not video_id:
-            self.log("❌ No video_id returned", "FAIL")
+        # Verify response structure
+        required_fields = ['status', 'progress', 'step']
+        missing_fields = [f for f in required_fields if f not in response]
+        if missing_fields:
+            self.log(f"❌ Job status missing fields: {missing_fields}", "FAIL")
             return False
             
-        # Poll for video completion
+        status = response.get('status')
+        progress = response.get('progress', 0)
+        step = response.get('step', '')
+        
+        self.log(f"✅ Job status: {status}, Progress: {progress}%, Step: {step}", "PASS")
+        
+        # Test invalid job ID
+        success, response = self.run_test(
+            "Job Status - Invalid ID",
+            "GET",
+            "/api/job/invalid-job-id",
+            expected_status=404
+        )
+        
+        if success:
+            self.log("✅ Correctly returned 404 for invalid job ID", "PASS")
+        
+        return True
+
+    def test_video_download_endpoint(self):
+        """Test video download endpoint"""
+        # Test with invalid video ID (should return 404)
+        success, response = self.run_test(
+            "Video Download - Invalid ID",
+            "GET",
+            "/api/video/invalid-video-id",
+            expected_status=404
+        )
+        
+        if success:
+            self.log("✅ Correctly returned 404 for invalid video ID", "PASS")
+            return True
+        
+        return False
+
+    def test_full_generation_flow(self):
+        """Test the complete generation flow"""
+        if not hasattr(self, 'test_job_id'):
+            self.log("⚠️  Skipping full flow test - no job_id available", "WARN")
+            return True
+            
+        self.log("Testing full generation flow (this may take 60+ seconds)...")
+        
+        # Poll job status until completion or timeout
         max_attempts = 120  # 2 minutes max
         for attempt in range(max_attempts):
             time.sleep(1)
-            status_success, status_data = self.run_test(
-                f"Video Status Check (Poll {attempt+1})",
+            
+            success, response = self.run_test(
+                f"Job Status Poll {attempt+1}",
                 "GET",
-                f"/api/video/status/{video_id}"
+                f"/api/job/{self.test_job_id}"
             )
             
-            if status_success:
-                status = status_data.get('status', 'unknown')
-                progress = status_data.get('progress', 0)
+            if not success:
+                continue
                 
-                if attempt % 10 == 0:  # Log every 10 seconds
-                    self.log(f"Video progress: {progress}% - {status}")
-                
-                if status == 'done' and status_data.get('video_ready'):
-                    self.log("✅ Video generation completed successfully", "PASS")
-                    self.test_video_id = video_id
-                    return True
-                elif status in ['failed', 'error']:
-                    self.log(f"❌ Video generation failed: {status_data.get('message', '')}", "FAIL")
+            status = response.get('status')
+            progress = response.get('progress', 0)
+            step = response.get('step', '')
+            
+            if attempt % 10 == 0:  # Log every 10 seconds
+                self.log(f"Generation progress: {progress}% - {step}")
+            
+            if status == 'complete':
+                result = response.get('result')
+                if not result:
+                    self.log("❌ Job complete but no result", "FAIL")
                     return False
                     
-        self.log("❌ Video generation timed out", "FAIL")
-        return False
-
-    def test_videos_endpoints(self):
-        """Test video listing and download endpoints"""
-        success, response = self.run_test(
-            "List Videos",
-            "GET",
-            "/api/videos"
-        )
-        
-        if not success:
-            return False
-            
-        videos = response.get('videos', [])
-        self.log(f"✅ Retrieved {len(videos)} videos", "PASS")
-        
-        # Test download endpoint if we have a video
-        if hasattr(self, 'test_video_id'):
-            # Test download endpoint (just check if it responds, don't download)
-            try:
-                download_url = f"{self.base_url}/api/video/{self.test_video_id}/download"
-                head_response = self.session.head(download_url, timeout=10)
-                if head_response.status_code == 200:
-                    self.log("✅ Video download endpoint accessible", "PASS")
-                else:
-                    self.log(f"❌ Video download failed: {head_response.status_code}", "FAIL")
-            except Exception as e:
-                self.log(f"❌ Video download test error: {e}", "FAIL")
+                # Verify result structure
+                required_sections = ['idea', 'script', 'video']
+                missing_sections = [s for s in required_sections if s not in result]
+                if missing_sections:
+                    self.log(f"❌ Result missing sections: {missing_sections}", "FAIL")
+                    return False
                 
-        return True
+                # Check idea section
+                idea = result.get('idea', {})
+                if not idea.get('title') or not idea.get('hook'):
+                    self.log("❌ Idea section missing title or hook", "FAIL")
+                    return False
+                
+                # Check script section
+                script = result.get('script', {})
+                scenes = script.get('scenes', [])
+                if len(scenes) < 3:
+                    self.log(f"❌ Script has too few scenes: {len(scenes)}", "FAIL")
+                    return False
+                
+                # Check video section
+                video = result.get('video', {})
+                video_id = video.get('id')
+                if not video_id:
+                    self.log("❌ Video section missing ID", "FAIL")
+                    return False
+                
+                self.log("✅ Full generation flow completed successfully", "PASS")
+                self.test_video_id = video_id
+                
+                # Test video download if available
+                if video.get('ready') and video.get('url'):
+                    download_success, _ = self.run_test(
+                        "Video Download Test",
+                        "GET",
+                        video.get('url'),
+                        expected_status=200
+                    )
+                    if download_success:
+                        self.log("✅ Video download successful", "PASS")
+                
+                return True
+                
+            elif status == 'error':
+                self.log(f"❌ Generation failed: {step}", "FAIL")
+                return False
+                
+        self.log("❌ Generation flow timed out", "FAIL")
+        return False
 
     def run_all_tests(self):
         """Run all tests in sequence"""
@@ -336,13 +281,10 @@ class ViralForgeAPITester:
         
         test_sequence = [
             ("Health Check", self.test_health_endpoint),
-            ("Stats Endpoint", self.test_stats_endpoint),
-            ("Trends Fetch", self.test_trends_fetch),
-            ("Trends Endpoints", self.test_trends_endpoints),
-            ("AI Generation Pipeline", self.test_generation_pipeline),
-            ("Scripts Endpoint", self.test_scripts_endpoint),
-            ("Video Generation", self.test_video_generation),
-            ("Videos Endpoints", self.test_videos_endpoints),
+            ("Generate All Endpoint", self.test_generate_all_endpoint),
+            ("Job Status Endpoint", self.test_job_status_endpoint),
+            ("Video Download Endpoint", self.test_video_download_endpoint),
+            ("Full Generation Flow", self.test_full_generation_flow),
         ]
         
         for test_name, test_func in test_sequence:
@@ -384,7 +326,7 @@ class ViralForgeAPITester:
                     self.log(f"   Expected: {failure['expected']}, Got: {failure['actual']}")
 
 def main():
-    tester = ViralForgeAPITester()
+    tester = ViralForgeV3Tester()
     passed, total, failures = tester.run_all_tests()
     
     # Return appropriate exit code
