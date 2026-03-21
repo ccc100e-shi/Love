@@ -1,7 +1,7 @@
 """
-ViralForge v3 — Simplified Single-Endpoint Backend
-===================================================
-One prompt → Full viral video pipeline
+ViralForge v3 — Production-Grade Viral Video Generator
+=======================================================
+Premium quality: Dynamic visuals, TikTok-style captions, AI voice
 """
 import os
 import json
@@ -12,17 +12,16 @@ import tempfile
 import subprocess
 import math
 import re
+import random
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, List, Dict
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
-import time
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -31,7 +30,7 @@ load_dotenv()
 
 # PIL for image generation
 try:
-    from PIL import Image, ImageDraw, ImageFont
+    from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
     PIL_OK = True
 except ImportError:
     PIL_OK = False
@@ -67,16 +66,44 @@ os.makedirs(AUDIO_DIR, exist_ok=True)
 # API Key
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
 
-# Video dimensions
+# Video dimensions (9:16 vertical)
 W, H = 1080, 1920
 FPS = 30
 
-# Color Palettes
-PALETTES = {
-    "indigo": {"bg": (15, 23, 42), "accent": (99, 102, 241), "text": (255, 255, 255)},
-    "emerald": {"bg": (6, 32, 28), "accent": (16, 185, 129), "text": (255, 255, 255)},
-    "amber": {"bg": (30, 20, 8), "accent": (245, 158, 11), "text": (255, 255, 255)},
-    "rose": {"bg": (30, 10, 15), "accent": (244, 63, 94), "text": (255, 255, 255)},
+# Premium color themes
+THEMES = {
+    "midnight": {
+        "bg_start": (10, 10, 25),
+        "bg_end": (25, 15, 45),
+        "accent": (138, 43, 226),  # Purple
+        "accent2": (255, 105, 180),  # Pink
+        "text": (255, 255, 255),
+        "subtitle_bg": (0, 0, 0, 180),
+    },
+    "ocean": {
+        "bg_start": (5, 20, 35),
+        "bg_end": (10, 40, 60),
+        "accent": (0, 212, 255),  # Cyan
+        "accent2": (50, 255, 150),  # Green
+        "text": (255, 255, 255),
+        "subtitle_bg": (0, 0, 0, 180),
+    },
+    "fire": {
+        "bg_start": (30, 10, 5),
+        "bg_end": (50, 20, 10),
+        "accent": (255, 100, 50),  # Orange
+        "accent2": (255, 200, 50),  # Yellow
+        "text": (255, 255, 255),
+        "subtitle_bg": (0, 0, 0, 180),
+    },
+    "emerald": {
+        "bg_start": (5, 25, 15),
+        "bg_end": (10, 45, 25),
+        "accent": (16, 185, 129),  # Green
+        "accent2": (52, 211, 153),  # Light green
+        "text": (255, 255, 255),
+        "subtitle_bg": (0, 0, 0, 180),
+    },
 }
 
 # In-memory job tracking
@@ -87,37 +114,39 @@ jobs = {}
 class GenerateAllRequest(BaseModel):
     prompt: str
 
-class JobStatusResponse(BaseModel):
-    job_id: str
-    status: str
-    progress: int
-    step: str
-    result: Optional[dict] = None
-
 # ============ HEALTH ============
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "version": "3.0", "has_key": bool(EMERGENT_LLM_KEY)}
+    return {"ok": True, "version": "3.1-pro", "has_key": bool(EMERGENT_LLM_KEY)}
 
-# ============ AI FUNCTIONS ============
+# ============ AI ENGINE ============
 
-async def ai_generate(prompt: str, system: str = "", max_tokens: int = 2000) -> str:
-    """Generate content using AI"""
+async def ai_generate(prompt: str, system: str = "", max_tokens: int = 2000, retries: int = 3) -> str:
+    """Generate content using AI with retry logic"""
     if not EMERGENT_LLM_KEY:
         raise Exception("AI key not configured")
     
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=f"vf-{uuid.uuid4()}",
-        system_message=system or "You are a viral content expert."
-    ).with_model("openai", "gpt-4o")
+    last_error = None
+    for attempt in range(retries):
+        try:
+            chat = LlmChat(
+                api_key=EMERGENT_LLM_KEY,
+                session_id=f"vf-{uuid.uuid4()}",
+                system_message=system or "You are a viral content expert."
+            ).with_model("openai", "gpt-4o")
+            
+            response = await chat.send_message(UserMessage(text=prompt))
+            return response
+        except Exception as e:
+            last_error = e
+            if attempt < retries - 1:
+                await asyncio.sleep(1)
     
-    response = await chat.send_message(UserMessage(text=prompt))
-    return response
+    raise last_error
 
 def parse_json(raw: str) -> dict:
-    """Parse JSON from AI response"""
+    """Parse JSON from AI response with fallback"""
     clean = re.sub(r"^```(?:json)?\s*", "", raw.strip())
     clean = re.sub(r"\s*```$", "", clean).strip()
     try:
@@ -126,21 +155,21 @@ def parse_json(raw: str) -> dict:
         m = re.search(r"(\{[\s\S]*\})", clean)
         if m:
             return json.loads(m.group(1))
-        raise ValueError("No JSON found")
+        raise ValueError("No JSON found in response")
 
-# ============ TREND ANALYSIS ============
+# ============ TREND INTELLIGENCE ============
 
-def fetch_youtube_trends() -> list:
+def fetch_trends() -> List[str]:
     """Quick trend fetch for context"""
     results = []
     url = "https://www.youtube.com/feeds/videos.xml?chart=trending&gl=US&hl=en"
-    headers = {"User-Agent": "ViralForge/3.0"}
+    headers = {"User-Agent": "ViralForge/3.1"}
     try:
         req = Request(url, headers=headers)
-        data = urlopen(req, timeout=10).read()
+        data = urlopen(req, timeout=8).read()
         root = ET.fromstring(data)
-        ns = {"a": "http://www.w3.org/2005/Atom", "yt": "http://www.youtube.com/xml/schemas/2015"}
-        for entry in root.findall("a:entry", ns)[:10]:
+        ns = {"a": "http://www.w3.org/2005/Atom"}
+        for entry in root.findall("a:entry", ns)[:8]:
             title = getattr(entry.find("a:title", ns), "text", "") or ""
             if title:
                 results.append(title)
@@ -148,9 +177,9 @@ def fetch_youtube_trends() -> list:
         pass
     return results
 
-# ============ VIDEO GENERATION ============
+# ============ PREMIUM VIDEO GENERATION ============
 
-FONT_CANDIDATES = [
+FONT_PATHS = [
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
 ]
@@ -159,7 +188,7 @@ _font_cache = {}
 def get_font(size: int):
     if size in _font_cache:
         return _font_cache[size]
-    for p in FONT_CANDIDATES:
+    for p in FONT_PATHS:
         if os.path.exists(p):
             try:
                 f = ImageFont.truetype(p, size)
@@ -171,74 +200,225 @@ def get_font(size: int):
     _font_cache[size] = f
     return f
 
-def wrap_text(text: str, max_chars: int = 18) -> list:
-    words, lines, cur = text.split(), [], []
-    for w in words:
-        cur.append(w)
-        if len(" ".join(cur)) > max_chars:
-            if len(cur) > 1:
-                lines.append(" ".join(cur[:-1]))
-                cur = [w]
-            else:
-                lines.append(" ".join(cur))
-                cur = []
-    if cur:
-        lines.append(" ".join(cur))
-    return lines[:4]
-
-def make_frame(caption: str, scene_n: int, total: int, pal_name: str, phase: str) -> Image.Image:
-    pal = PALETTES.get(pal_name, PALETTES["indigo"])
-    img = Image.new("RGB", (W, H), pal["bg"])
+def create_gradient_background(width: int, height: int, theme: dict, variation: float = 0) -> Image.Image:
+    """Create animated gradient background"""
+    img = Image.new("RGB", (width, height))
     draw = ImageDraw.Draw(img)
-    acc = pal["accent"]
     
-    # Gradient
-    for y in range(H):
-        p = y / H
-        r = int(pal["bg"][0] + (acc[0] - pal["bg"][0]) * p * 0.12)
-        g = int(pal["bg"][1] + (acc[1] - pal["bg"][1]) * p * 0.08)
-        b = int(pal["bg"][2] + (acc[2] - pal["bg"][2]) * p * 0.10)
-        draw.line([(0, y), (W, y)], fill=(max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b))))
+    start = theme["bg_start"]
+    end = theme["bg_end"]
     
-    if phase == "hook":
-        # Bold hook frame
-        draw.rectangle([0, 0, W, H], fill=acc)
-        lines = wrap_text(caption.upper(), 14)
-        fs = 100 if len(lines) == 1 else 85
-        font = get_font(fs)
-        total_h = len(lines) * (fs + 16)
-        y = (H - total_h) // 2
-        for ln in lines:
-            bbox = draw.textbbox((0, 0), ln, font=font)
-            tw = bbox[2] - bbox[0]
-            x = (W - tw) // 2
-            draw.text((x + 4, y + 4), ln, fill=(0, 0, 0), font=font)
-            draw.text((x, y), ln, fill=(255, 255, 255), font=font)
-            y += fs + 16
-    else:
-        # Progress bar
-        prog = int(W * scene_n / max(total, 1))
-        draw.rectangle([0, H - 8, W, H], fill=tuple(c // 4 for c in acc))
-        draw.rectangle([0, H - 8, prog, H], fill=acc)
+    # Add variation for animation effect
+    var = math.sin(variation * math.pi * 2) * 0.1
+    
+    for y in range(height):
+        ratio = y / height + var
+        ratio = max(0, min(1, ratio))
+        r = int(start[0] + (end[0] - start[0]) * ratio)
+        g = int(start[1] + (end[1] - start[1]) * ratio)
+        b = int(start[2] + (end[2] - start[2]) * ratio)
+        draw.line([(0, y), (width, y)], fill=(r, g, b))
+    
+    return img
+
+def add_particle_effects(img: Image.Image, theme: dict, frame_num: int, total_frames: int) -> Image.Image:
+    """Add subtle floating particles for dynamic feel"""
+    draw = ImageDraw.Draw(img, "RGBA")
+    
+    random.seed(42)  # Consistent particles
+    num_particles = 15
+    
+    for i in range(num_particles):
+        # Base position
+        base_x = random.randint(0, W)
+        base_y = random.randint(0, H)
         
-        # Caption
-        lines = wrap_text(caption.upper(), 16)
-        fs = 90 if len(lines) == 1 else 75
-        font = get_font(fs)
-        base_y = int(H * 0.70)
-        total_h = len(lines) * (fs + 14)
-        y = base_y - total_h // 2
+        # Animate position
+        progress = frame_num / max(total_frames, 1)
+        offset_y = math.sin(progress * math.pi * 2 + i) * 30
+        offset_x = math.cos(progress * math.pi * 2 + i * 0.5) * 20
         
-        for ln in lines:
-            bbox = draw.textbbox((0, 0), ln, font=font)
-            tw = bbox[2] - bbox[0]
-            x = (W - tw) // 2
-            for ox, oy in [(4, 4), (6, 6)]:
-                draw.text((x + ox, y + oy), ln, fill=(0, 0, 0), font=font)
-            for ox, oy in [(-2, -2), (2, -2), (-2, 2), (2, 2)]:
-                draw.text((x + ox, y + oy), ln, fill=acc, font=font)
-            draw.text((x, y), ln, fill=pal["text"], font=font)
-            y += fs + 14
+        x = int(base_x + offset_x) % W
+        y = int((base_y + offset_y + frame_num * 0.5) % H)
+        
+        # Particle size and alpha
+        size = random.randint(2, 6)
+        alpha = random.randint(30, 80)
+        
+        color = (*theme["accent"][:3], alpha)
+        draw.ellipse([x - size, y - size, x + size, y + size], fill=color)
+    
+    return img
+
+def wrap_text_smart(text: str, max_width: int, font) -> List[str]:
+    """Smart text wrapping"""
+    words = text.split()
+    lines = []
+    current_line = []
+    
+    dummy_img = Image.new("RGB", (1, 1))
+    draw = ImageDraw.Draw(dummy_img)
+    
+    for word in words:
+        test_line = " ".join(current_line + [word])
+        bbox = draw.textbbox((0, 0), test_line, font=font)
+        width = bbox[2] - bbox[0]
+        
+        if width <= max_width:
+            current_line.append(word)
+        else:
+            if current_line:
+                lines.append(" ".join(current_line))
+            current_line = [word]
+    
+    if current_line:
+        lines.append(" ".join(current_line))
+    
+    return lines[:4]  # Max 4 lines
+
+def draw_tiktok_subtitle(img: Image.Image, text: str, theme: dict, 
+                         progress: float = 1.0, emphasis_words: List[str] = None) -> Image.Image:
+    """Draw TikTok-style animated subtitle with word emphasis"""
+    draw = ImageDraw.Draw(img, "RGBA")
+    
+    # Font sizes
+    font_size = 72
+    font = get_font(font_size)
+    
+    # Wrap text
+    max_width = W - 120
+    lines = wrap_text_smart(text.upper(), max_width, font)
+    
+    # Calculate total height
+    line_height = font_size + 20
+    total_height = len(lines) * line_height
+    
+    # Position (lower third of screen)
+    start_y = int(H * 0.68) - total_height // 2
+    
+    # Draw each line
+    for i, line in enumerate(lines):
+        bbox = draw.textbbox((0, 0), line, font=font)
+        text_width = bbox[2] - bbox[0]
+        x = (W - text_width) // 2
+        y = start_y + i * line_height
+        
+        # Animate entrance
+        line_progress = min(1.0, progress * len(lines) - i)
+        if line_progress <= 0:
+            continue
+        
+        # Scale effect
+        scale = 0.8 + 0.2 * min(1.0, line_progress)
+        alpha = int(255 * min(1.0, line_progress))
+        
+        # Background pill
+        padding_x, padding_y = 30, 12
+        bg_rect = [
+            x - padding_x,
+            y - padding_y,
+            x + text_width + padding_x,
+            y + font_size + padding_y
+        ]
+        
+        # Rounded rectangle background
+        draw.rounded_rectangle(bg_rect, radius=20, fill=(0, 0, 0, min(200, alpha)))
+        
+        # Draw text with glow effect
+        glow_color = (*theme["accent"], 60)
+        for offset in [(2, 2), (-2, -2), (2, -2), (-2, 2)]:
+            draw.text((x + offset[0], y + offset[1]), line, font=font, fill=glow_color)
+        
+        # Main text - highlight emphasis words
+        if emphasis_words:
+            # Draw word by word for emphasis
+            words = line.split()
+            word_x = x
+            for word in words:
+                word_bbox = draw.textbbox((0, 0), word + " ", font=font)
+                word_width = word_bbox[2] - word_bbox[0]
+                
+                # Check if this word should be emphasized
+                is_emphasis = any(ew.upper() in word.upper() for ew in (emphasis_words or []))
+                
+                if is_emphasis:
+                    # Draw with accent color
+                    draw.text((word_x, y), word, font=font, fill=theme["accent2"])
+                else:
+                    draw.text((word_x, y), word, font=font, fill=(255, 255, 255, alpha))
+                
+                word_x += word_width
+        else:
+            draw.text((x, y), line, font=font, fill=(255, 255, 255, alpha))
+    
+    return img
+
+def draw_hook_frame(img: Image.Image, text: str, theme: dict, progress: float) -> Image.Image:
+    """Special hook frame with maximum impact"""
+    draw = ImageDraw.Draw(img, "RGBA")
+    
+    # Large impactful text
+    font_size = 110
+    font = get_font(font_size)
+    
+    # Wrap text
+    max_width = W - 100
+    lines = wrap_text_smart(text.upper(), max_width, font)
+    
+    line_height = font_size + 25
+    total_height = len(lines) * line_height
+    start_y = (H - total_height) // 2 - 50
+    
+    # Pulsing background effect
+    pulse = 0.9 + 0.1 * math.sin(progress * math.pi * 4)
+    
+    for i, line in enumerate(lines):
+        bbox = draw.textbbox((0, 0), line, font=font)
+        text_width = bbox[2] - bbox[0]
+        x = (W - text_width) // 2
+        y = start_y + i * line_height
+        
+        # Glow effect
+        glow_size = int(8 * pulse)
+        for g in range(glow_size, 0, -2):
+            glow_alpha = int(40 * (1 - g / glow_size))
+            glow_color = (*theme["accent"], glow_alpha)
+            draw.text((x, y), line, font=font, fill=glow_color,
+                     stroke_width=g, stroke_fill=glow_color)
+        
+        # Main text with accent color
+        draw.text((x, y), line, font=font, fill=theme["accent"],
+                 stroke_width=3, stroke_fill=(0, 0, 0))
+    
+    # Add "WATCH THIS" or similar hook indicator
+    small_font = get_font(32)
+    indicator = "👇 WATCH THIS"
+    ind_bbox = draw.textbbox((0, 0), indicator, font=small_font)
+    ind_x = (W - (ind_bbox[2] - ind_bbox[0])) // 2
+    ind_y = start_y + total_height + 60
+    
+    draw.rounded_rectangle(
+        [ind_x - 20, ind_y - 10, ind_x + (ind_bbox[2] - ind_bbox[0]) + 20, ind_y + 40],
+        radius=25, fill=theme["accent"]
+    )
+    draw.text((ind_x, ind_y), indicator, font=small_font, fill=(255, 255, 255))
+    
+    return img
+
+def draw_progress_indicator(img: Image.Image, current: int, total: int, theme: dict) -> Image.Image:
+    """Draw scene progress indicator"""
+    draw = ImageDraw.Draw(img, "RGBA")
+    
+    # Progress bar at bottom
+    bar_height = 6
+    bar_y = H - 20
+    
+    # Background
+    draw.rectangle([0, bar_y, W, bar_y + bar_height], fill=(255, 255, 255, 40))
+    
+    # Progress
+    progress_width = int(W * current / max(total, 1))
+    draw.rectangle([0, bar_y, progress_width, bar_y + bar_height], fill=theme["accent"])
     
     return img
 
@@ -253,16 +433,16 @@ def get_ffmpeg() -> str:
         return "ffmpeg"
 
 async def generate_tts(text: str, video_id: str) -> Optional[str]:
-    """Generate TTS audio"""
+    """Generate high-quality TTS"""
     if not EMERGENT_LLM_KEY:
         return None
     try:
         tts = OpenAITextToSpeech(api_key=EMERGENT_LLM_KEY)
         audio_bytes = await tts.generate_speech(
             text=text,
-            model="tts-1",
-            voice="nova",
-            speed=1.1
+            model="tts-1-hd",  # HD quality
+            voice="nova",  # Energetic voice
+            speed=1.05  # Slightly faster for engagement
         )
         audio_path = os.path.join(AUDIO_DIR, f"voice_{video_id}.mp3")
         with open(audio_path, "wb") as f:
@@ -272,8 +452,8 @@ async def generate_tts(text: str, video_id: str) -> Optional[str]:
         print(f"[TTS] Error: {e}")
         return None
 
-async def build_video(script: dict, video_id: str, update_progress) -> Optional[str]:
-    """Build the video from script"""
+async def build_premium_video(script: dict, video_id: str, update_progress) -> Optional[str]:
+    """Build premium quality video with TikTok-style captions"""
     if not PIL_OK:
         return None
     
@@ -281,46 +461,77 @@ async def build_video(script: dict, video_id: str, update_progress) -> Optional[
     if not scenes:
         return None
     
+    # Select random theme
+    theme_name = random.choice(list(THEMES.keys()))
+    theme = THEMES[theme_name]
+    
     ff = get_ffmpeg()
-    tmp = tempfile.mkdtemp(prefix="vf_")
+    tmp = tempfile.mkdtemp(prefix="vf_pro_")
     
     try:
         all_frames = []
         total_scenes = len(scenes)
-        palette = "indigo"
         
+        # Calculate total frames
+        total_duration = sum(s.get("duration", 3) for s in scenes)
+        
+        frame_count = 0
         for si, scene in enumerate(scenes):
-            await update_progress(60 + int((si / total_scenes) * 20), f"Rendering scene {si+1}/{total_scenes}")
+            await update_progress(
+                55 + int((si / total_scenes) * 30),
+                f"Rendering scene {si+1}/{total_scenes}"
+            )
             
             caption = scene.get("caption_text") or scene.get("spoken_text", "")
             duration = scene.get("duration", 3)
             phase = scene.get("phase", "body")
+            emphasis = scene.get("emphasis_words", [])
             
-            base = make_frame(caption, si + 1, total_scenes, palette, phase)
-            n_frames = max(int(duration * FPS), FPS // 2)
+            n_frames = int(duration * FPS)
             
-            for i in range(n_frames):
-                frame = base.copy()
-                if i < 4:
-                    fade = Image.new("RGB", (W, H), (0, 0, 0))
-                    frame = Image.blend(fade, frame, i / 4)
+            for fi in range(n_frames):
+                # Progress within scene
+                scene_progress = fi / max(n_frames - 1, 1)
+                global_progress = frame_count / (total_duration * FPS)
+                
+                # Create base frame with gradient
+                frame = create_gradient_background(W, H, theme, global_progress)
+                
+                # Add particle effects
+                frame = add_particle_effects(frame, theme, frame_count, int(total_duration * FPS))
+                
+                # Draw content based on phase
+                if phase == "hook":
+                    frame = draw_hook_frame(frame, caption, theme, scene_progress)
+                else:
+                    # Subtitle animation
+                    text_progress = min(1.0, scene_progress * 3)  # Quick entrance
+                    frame = draw_tiktok_subtitle(frame, caption, theme, text_progress, emphasis)
+                
+                # Progress indicator
+                frame = draw_progress_indicator(frame, si + 1, total_scenes, theme)
+                
                 all_frames.append(frame)
+                frame_count += 1
         
-        await update_progress(80, "Saving frames...")
+        await update_progress(85, "Saving frames...")
         
+        # Save frames
         frame_paths = []
         for fi, frame in enumerate(all_frames):
             p = os.path.join(tmp, f"f{fi:07d}.jpg")
-            frame.save(p, "JPEG", quality=88)
+            frame.save(p, "JPEG", quality=92)
             frame_paths.append(p)
         
-        await update_progress(85, "Generating AI voice...")
+        await update_progress(88, "Generating AI voice...")
         
+        # Generate TTS
         full_text = " ".join(s.get("spoken_text", "") for s in scenes)
         audio_path = await generate_tts(full_text, video_id)
         
-        await update_progress(90, "Encoding video...")
+        await update_progress(92, "Encoding video...")
         
+        # Create frame list
         lst = os.path.join(tmp, "frames.txt")
         with open(lst, "w") as fh:
             for fp in frame_paths:
@@ -330,15 +541,30 @@ async def build_video(script: dict, video_id: str, update_progress) -> Optional[
         
         out_path = os.path.join(OUT_DIR, f"viral_{video_id}.mp4")
         
+        # FFmpeg encoding with high quality
         if audio_path and os.path.exists(audio_path):
-            cmd = [ff, "-y", "-f", "concat", "-safe", "0", "-i", lst, "-i", audio_path,
-                   "-vf", "scale=1080:1920,setsar=1", "-c:v", "libx264", "-preset", "fast",
-                   "-crf", "22", "-c:a", "aac", "-b:a", "128k", "-shortest",
-                   "-r", str(FPS), "-pix_fmt", "yuv420p", "-movflags", "+faststart", out_path]
+            cmd = [
+                ff, "-y",
+                "-f", "concat", "-safe", "0", "-i", lst,
+                "-i", audio_path,
+                "-vf", "scale=1080:1920,setsar=1",
+                "-c:v", "libx264", "-preset", "medium", "-crf", "20",
+                "-c:a", "aac", "-b:a", "192k",
+                "-shortest",
+                "-r", str(FPS), "-pix_fmt", "yuv420p",
+                "-movflags", "+faststart",
+                out_path
+            ]
         else:
-            cmd = [ff, "-y", "-f", "concat", "-safe", "0", "-i", lst,
-                   "-vf", "scale=1080:1920,setsar=1", "-c:v", "libx264", "-preset", "fast",
-                   "-crf", "22", "-r", str(FPS), "-pix_fmt", "yuv420p", "-movflags", "+faststart", out_path]
+            cmd = [
+                ff, "-y",
+                "-f", "concat", "-safe", "0", "-i", lst,
+                "-vf", "scale=1080:1920,setsar=1",
+                "-c:v", "libx264", "-preset", "medium", "-crf", "20",
+                "-r", str(FPS), "-pix_fmt", "yuv420p",
+                "-movflags", "+faststart",
+                out_path
+            ]
         
         result = subprocess.run(cmd, capture_output=True, timeout=300)
         if result.returncode != 0:
@@ -358,8 +584,7 @@ async def build_video(script: dict, video_id: str, update_progress) -> Optional[
 @app.post("/api/generate-all")
 async def generate_all(req: GenerateAllRequest, background_tasks: BackgroundTasks):
     """
-    ONE endpoint to rule them all.
-    User prompt → Idea + Hook + Script + Voice + Video
+    Premium viral video generation pipeline
     """
     if not req.prompt or len(req.prompt.strip()) < 3:
         raise HTTPException(status_code=400, detail="Please enter a valid prompt")
@@ -380,95 +605,129 @@ async def generate_all(req: GenerateAllRequest, background_tasks: BackgroundTask
             
             await update_progress(5, "Analyzing your request...")
             
-            # Step 1: Get trending context
-            await update_progress(10, "Fetching viral trends...")
-            trends = fetch_youtube_trends()
-            trend_context = "\n".join(f"- {t}" for t in trends[:5]) if trends else "General viral content"
+            # Step 1: Fetch trends for context
+            await update_progress(8, "Fetching viral trends...")
+            trends = fetch_trends()
+            trend_context = "\n".join(f"- {t}" for t in trends[:5]) if trends else "General viral trends"
             
-            # Step 2: Generate the perfect viral idea
-            await update_progress(20, "Creating viral idea...")
+            # Step 2: Generate optimized viral idea with strong hook
+            await update_progress(15, "Creating viral idea...")
             
-            idea_prompt = f"""Based on this user request: "{req.prompt}"
+            idea_prompt = f"""You are the world's best viral content strategist. Based on this request:
 
-And these current trending topics:
+"{req.prompt}"
+
+Current trending topics for context:
 {trend_context}
 
-Generate ONE perfect viral video idea.
+Generate ONE perfect viral video concept optimized for TikTok/Shorts.
+
+CRITICAL: The HOOK must be incredibly strong - it has 1.5 seconds to stop the scroll.
+
+Hook techniques that work:
+- Pattern interrupt ("Stop scrolling if...")
+- Controversial take ("Nobody talks about this...")
+- Curiosity gap ("The real reason why...")
+- Fear/urgency ("You're making this mistake...")
+- Transformation ("How I went from X to Y...")
 
 OUTPUT JSON only:
 {{
-  "niche": "detected niche (e.g., fitness, finance, motivation)",
-  "title": "Viral video title (scroll-stopping, 8-12 words)",
-  "idea": "2-sentence description of the video concept",
-  "hook": "Exact opening line (first 3 seconds) - must create instant curiosity",
-  "hook_type": "curiosity_gap|fear|transformation|question|number",
-  "primary_emotion": "curiosity|fear|aspiration|humor|shock",
-  "predicted_engagement": "high|very_high|viral",
-  "why_viral": "1 sentence explaining the psychological trigger"
+  "niche": "detected niche",
+  "title": "Scroll-stopping title (8-12 words, power words)",
+  "idea": "2-sentence video concept",
+  "hook": "EXACT opening words - must create instant curiosity in 1.5 seconds",
+  "hook_type": "pattern_interrupt|curiosity_gap|fear|transformation|controversy",
+  "emotion": "primary emotion triggered",
+  "why_viral": "1 sentence on the psychological trigger",
+  "emphasis_words": ["key", "words", "to", "highlight"]
 }}"""
             
-            idea_system = """You are the world's top viral content strategist. 
-You create concepts that get millions of views.
-Output ONLY valid JSON. No explanation."""
-            
-            idea_raw = await ai_generate(idea_prompt, idea_system, 800)
+            idea_raw = await ai_generate(idea_prompt, 
+                "You create viral concepts that get millions of views. Output ONLY valid JSON.", 1000)
             idea_data = parse_json(idea_raw)
             
-            # Step 3: Generate full script
-            await update_progress(35, "Writing viral script...")
+            # Step 3: Generate premium script
+            await update_progress(30, "Writing viral script...")
             
-            script_prompt = f"""Create a complete TikTok/Shorts script for this viral idea:
+            script_prompt = f"""Create a PREMIUM viral video script. This must be SHORT, PUNCHY, and ADDICTIVE.
 
-TITLE: {idea_data.get('title', '')}
-HOOK: {idea_data.get('hook', '')}
-CONCEPT: {idea_data.get('idea', '')}
-EMOTION: {idea_data.get('primary_emotion', 'curiosity')}
+CONCEPT:
+- Title: {idea_data.get('title', '')}
+- Hook: {idea_data.get('hook', '')}
+- Idea: {idea_data.get('idea', '')}
+- Emotion: {idea_data.get('emotion', 'curiosity')}
 
-Generate a 30-45 second script with 4-6 scenes.
+RULES FOR VIRAL SCRIPTS:
+1. HOOK (0-3s): Pattern interrupt, stop the scroll IMMEDIATELY
+2. TENSION (3-15s): Build curiosity, create "I need to know" feeling
+3. PAYOFF (15-30s): Deliver value, create "aha" moment
+4. LOOP (last 2s): End that makes viewers rewatch
 
-OUTPUT JSON only:
+WRITING STYLE:
+- Short sentences. Punchy. Direct.
+- Conversational, not robotic
+- Each word must EARN its place
+- Create rhythm and flow
+
+OUTPUT JSON:
 {{
-  "title": "final title",
-  "hook": "opening hook line",
-  "total_duration": 35,
+  "title": "final optimized title",
+  "hook": "exact hook line",
+  "total_duration": 30,
   "scenes": [
     {{
       "id": 1,
       "phase": "hook",
       "duration": 3,
-      "spoken_text": "what the creator says",
-      "caption_text": "ON-SCREEN TEXT (shorter, punchier)",
-      "visual_direction": "what viewer sees"
+      "spoken_text": "Natural spoken words",
+      "caption_text": "SHORT ON-SCREEN TEXT",
+      "emphasis_words": ["KEY", "WORDS"]
+    }},
+    {{
+      "id": 2,
+      "phase": "build",
+      "duration": 8,
+      "spoken_text": "...",
+      "caption_text": "...",
+      "emphasis_words": []
+    }},
+    {{
+      "id": 3,
+      "phase": "payoff",
+      "duration": 12,
+      "spoken_text": "...",
+      "caption_text": "...",
+      "emphasis_words": []
+    }},
+    {{
+      "id": 4,
+      "phase": "loop",
+      "duration": 4,
+      "spoken_text": "...",
+      "caption_text": "...",
+      "emphasis_words": []
     }}
   ],
-  "hashtags": ["#tag1", "#tag2", "#tag3"],
-  "music_style": "describe ideal background music"
+  "hashtags": ["#viral", "#fyp", "#niche"],
+  "caption": "Video caption for posting"
 }}
 
-RULES:
-- Hook phase: 0-3 seconds, must stop the scroll
-- Build phase: 3-20 seconds, create tension
-- Payoff phase: 20-35 seconds, deliver value
-- Keep spoken text natural, conversational
-- Caption text should be DIFFERENT from spoken (shorter, punchier)"""
+Keep total duration 25-35 seconds. 4-5 scenes max."""
             
-            script_system = """You are an elite short-form video scriptwriter.
-Every word must earn its place. Maximum engagement.
-Output ONLY valid JSON."""
-            
-            script_raw = await ai_generate(script_prompt, script_system, 1500)
+            script_raw = await ai_generate(script_prompt,
+                "You write viral scripts that keep viewers hooked. Output ONLY valid JSON.", 1800)
             script_data = parse_json(script_raw)
             
-            # Step 4: Build the video
+            # Step 4: Build premium video
             await update_progress(50, "Building video...")
             
-            video_id = job_id
-            video_path = await build_video(script_data, video_id, update_progress)
+            video_path = await build_premium_video(script_data, job_id, update_progress)
             
-            await update_progress(95, "Finalizing...")
+            await update_progress(96, "Finalizing...")
             
             # Prepare result
-            video_url = f"/api/video/{video_id}" if video_path and os.path.exists(video_path) else None
+            video_url = f"/api/video/{job_id}" if video_path and os.path.exists(video_path) else None
             
             result = {
                 "success": True,
@@ -478,29 +737,31 @@ Output ONLY valid JSON."""
                     "concept": idea_data.get("idea", ""),
                     "hook": idea_data.get("hook", script_data.get("hook", "")),
                     "hook_type": idea_data.get("hook_type", "curiosity_gap"),
-                    "emotion": idea_data.get("primary_emotion", "curiosity"),
+                    "emotion": idea_data.get("emotion", "curiosity"),
                     "why_viral": idea_data.get("why_viral", ""),
                 },
                 "script": {
                     "title": script_data.get("title", ""),
                     "hook": script_data.get("hook", ""),
-                    "duration": script_data.get("total_duration", 35),
+                    "duration": script_data.get("total_duration", 30),
                     "scenes": script_data.get("scenes", []),
                     "hashtags": script_data.get("hashtags", []),
-                    "music": script_data.get("music_style", ""),
+                    "caption": script_data.get("caption", ""),
                 },
                 "video": {
-                    "id": video_id,
+                    "id": job_id,
                     "url": video_url,
                     "ready": video_url is not None,
                 }
             }
             
-            # Save to DB
+            # Save to MongoDB for learning
             await db.generations.insert_one({
                 "job_id": job_id,
                 "prompt": req.prompt,
-                "result": result,
+                "idea": result["idea"],
+                "script": result["script"],
+                "video_ready": result["video"]["ready"],
                 "created_at": datetime.now(timezone.utc).isoformat(),
             })
             
@@ -513,6 +774,8 @@ Output ONLY valid JSON."""
             
         except Exception as e:
             print(f"[generate_all] Error: {e}")
+            import traceback
+            traceback.print_exc()
             jobs[job_id] = {
                 "status": "error",
                 "progress": 0,
@@ -527,6 +790,24 @@ Output ONLY valid JSON."""
 async def get_job_status(job_id: str):
     """Check job status"""
     if job_id not in jobs:
+        # Check MongoDB
+        doc = await db.generations.find_one({"job_id": job_id}, {"_id": 0})
+        if doc:
+            return {
+                "status": "complete",
+                "progress": 100,
+                "step": "Done!",
+                "result": {
+                    "success": True,
+                    "idea": doc.get("idea"),
+                    "script": doc.get("script"),
+                    "video": {
+                        "id": job_id,
+                        "url": f"/api/video/{job_id}",
+                        "ready": doc.get("video_ready", False)
+                    }
+                }
+            }
         raise HTTPException(status_code=404, detail="Job not found")
     return jobs[job_id]
 
@@ -538,8 +819,15 @@ async def get_video(video_id: str):
         raise HTTPException(status_code=404, detail="Video not found")
     return FileResponse(path, media_type="video/mp4", filename=f"viral_{video_id}.mp4")
 
+@app.get("/api/history")
+async def get_history():
+    """Get generation history"""
+    cursor = db.generations.find({}, {"_id": 0}).sort("created_at", -1).limit(20)
+    items = await cursor.to_list(length=20)
+    return {"history": items}
+
 # ============ STARTUP ============
 
 @app.on_event("startup")
 async def startup():
-    print("✓ ViralForge v3 - Simplified Edition Ready")
+    print("✓ ViralForge v3.1 Pro — Production Ready")
