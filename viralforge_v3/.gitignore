@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+data/vf3.db
+outputs/
+exports/
+*.mp4
+*.jpg
+.DS_Store
+venv/
+.venv/

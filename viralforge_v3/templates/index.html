@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ViralForge v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/app.css">
+<style>
+/* ── Notification Panel ──────────────────────────────────────────── */
+#notif-drawer {
+  position:fixed; right:0; top:50px; bottom:0; width:320px;
+  background:var(--bg1); border-left:1px solid var(--line);
+  transform:translateX(100%); transition:transform .25s ease;
+  z-index:80; display:flex; flex-direction:column;
+}
+#notif-drawer.open { transform:translateX(0); }
+#notif-header {
+  padding:14px 16px; border-bottom:1px solid var(--line);
+  display:flex; justify-content:space-between; align-items:center;
+  flex-shrink:0;
+}
+#notif-title { font-size:12px; font-weight:700; letter-spacing:.06em; }
+#notif-badge {
+  background:var(--amber); color:#000; border-radius:10px;
+  font-size:10px; font-weight:800; padding:1px 6px; font-family:var(--mono);
+  display:none;
+}
+#notif-feed {
+  flex:1; overflow-y:auto; padding:8px;
+  display:flex; flex-direction:column; gap:5px;
+}
+.notif-item {
+  background:var(--bg2); border:1px solid var(--line);
+  border-radius:7px; padding:9px 11px;
+  animation:fadein .2s ease;
+}
+.notif-item.unread { border-left:3px solid var(--amber); }
+.notif-item.type-error { border-left:3px solid var(--red); }
+.notif-item.type-success { border-left:3px solid var(--green); }
+.notif-item.type-video { border-left:3px solid var(--blue); }
+.notif-item.type-report { border-left:3px solid var(--purple); }
+.notif-row1 { display:flex; justify-content:space-between; align-items:center; margin-bottom:3px; }
+.notif-title-text { font-size:11px; font-weight:700; color:var(--text); }
+.notif-ts { font-size:9px; font-family:var(--mono); color:var(--text3); }
+.notif-msg { font-size:11px; color:var(--text2); line-height:1.45; }
+.notif-meta { margin-top:5px; font-size:9px; font-family:var(--mono); color:var(--text3); }
+.notif-meta span { margin-right:8px; }
+#notif-empty { text-align:center; padding:32px 16px; color:var(--text3); font-size:12px; }
+
+/* ── Notification Bell ───────────────────────────────────────────── */
+#notif-bell-btn {
+  position:relative; background:none; border:1px solid var(--line2);
+  border-radius:6px; padding:5px 10px; color:var(--text2); font-size:13px;
+  cursor:pointer; transition:all .15s;
+}
+#notif-bell-btn:hover { border-color:var(--amber); color:var(--amber); }
+#bell-count {
+  position:absolute; top:-5px; right:-5px;
+  background:var(--amber); color:#000; border-radius:8px;
+  font-size:9px; font-weight:800; padding:1px 4px;
+  font-family:var(--mono); display:none;
+}
+
+/* ── Live indicator in sidebar ───────────────────────────────────── */
+.notif-dot {
+  width:6px; height:6px; border-radius:50%; background:var(--text3);
+  display:inline-block; margin-left:auto; flex-shrink:0;
+}
+.notif-dot.live { background:var(--green); box-shadow:0 0 5px var(--green); animation:pulse 2s ease-in-out infinite; }
+
+/* ── Performance logger ──────────────────────────────────────────── */
+.perf-form { display:flex; flex-direction:column; gap:10px; }
+</style>
+</head>
+<body>
+
+<div id="toast-zone"></div>
+
+<!-- ── Notification Drawer ─────────────────────────────────────── -->
+<div id="notif-drawer">
+  <div id="notif-header">
+    <span id="notif-title">🔔 LIVE FEED</span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="notif-badge">0</span>
+      <button class="btn btn-ghost btn-xs" onclick="clearNotifs()">Clear</button>
+      <button class="btn btn-ghost btn-xs" onclick="toggleNotifDrawer()">✕</button>
+    </div>
+  </div>
+  <div id="notif-feed">
+    <div id="notif-empty">No notifications yet.<br>Events will appear here in real time.</div>
+  </div>
+</div>
+
+<!-- ── App Shell ──────────────────────────────────────────────── -->
+<div id="app">
+
+  <!-- Topbar -->
+  <header id="topbar">
+    <div id="logo">
+      <div id="logo-icon">⚡</div>
+      VIRAL<em>FORGE</em>
+      <span style="font-size:10px;color:var(--text3);font-family:var(--mono);font-weight:400;margin-left:4px">v3</span>
+    </div>
+    <div id="topbar-right">
+      <span style="display:flex;align-items:center;gap:5px">
+        <span class="status-dot idle" id="status-dot"></span>
+        <span id="status-text" style="font-size:11px">IDLE</span>
+      </span>
+      <span id="last-fetch-label" style="display:none;font-size:10px">
+        fetched <span id="last-fetch-time"></span>
+      </span>
+      <button id="notif-bell-btn" onclick="toggleNotifDrawer()" title="Notifications">
+        🔔 <span id="bell-count">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <nav id="sidebar">
+    <div class="nav-section">Main</div>
+    <button class="nav-btn active" data-page="dashboard" onclick="Actions.nav('dashboard')">
+      <span class="nav-icon">◈</span> Dashboard
+    </button>
+    <button class="nav-btn" data-page="trends" onclick="Actions.nav('trends')">
+      <span class="nav-icon">↑</span> Trends
+    </button>
+    <button class="nav-btn" data-page="generate" onclick="Actions.nav('generate')">
+      <span class="nav-icon">✦</span> Generate
+    </button>
+    <button class="nav-btn" data-page="videos" onclick="Actions.nav('videos')">
+      <span class="nav-icon">▶</span> Videos
+    </button>
+    <div class="nav-divider"></div>
+    <div class="nav-section">Tools</div>
+    <button class="nav-btn" data-page="publish" onclick="Actions.nav('publish')">
+      <span class="nav-icon">📤</span> Publish
+    </button>
+    <button class="nav-btn" data-page="learning" onclick="Actions.nav('learning')">
+      <span class="nav-icon">◎</span> Learning
+    </button>
+    <div class="nav-divider"></div>
+    <button class="nav-btn" data-page="notifications" onclick="Actions.nav('notifications')">
+      <span class="nav-icon">🔔</span> Notifications
+      <span class="notif-dot" id="sidebar-notif-dot"></span>
+    </button>
+  </nav>
+
+  <!-- Main Content -->
+  <main id="main">
+
+    <!-- ── DASHBOARD ─────────────────────────────────────────── -->
+    <section id="page-dashboard" class="page active">
+      <div class="ph">
+        <div class="ph-row">
+          <div>
+            <div class="ph-title">Trend Intelligence</div>
+            <div class="ph-sub">Pattern analysis · AI decision engine · 9:16 video output</div>
+          </div>
+          <button class="btn btn-primary" onclick="Actions.fetchTrends()" id="fetch-btn">⚡ Fetch Live Trends</button>
+        </div>
+      </div>
+
+      <div class="grid-4" style="margin-bottom:14px">
+        <div class="stat-card"><div class="stat-label">Trends</div><div class="stat-value sv-amber" id="stat-trends">—</div></div>
+        <div class="stat-card"><div class="stat-label">Scripts</div><div class="stat-value sv-green" id="stat-scripts">—</div></div>
+        <div class="stat-card"><div class="stat-label">Videos</div><div class="stat-value sv-blue" id="stat-videos">—</div></div>
+        <div class="stat-card"><div class="stat-label">Avg Score</div><div class="stat-value sv-amber" id="stat-score">—</div></div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:14px">
+        <div class="card">
+          <div class="card-header">Hook Distribution</div>
+          <div id="dash-hook-chart"><div class="empty" style="padding:20px"><div class="empty-sub">Fetch trends to populate</div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header">Emotional Trigger Frequency</div>
+          <div id="dash-trigger-chart"><div class="empty" style="padding:20px"><div class="empty-sub">Fetch trends to populate</div></div></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">Top Trends — Virality Ranking</div>
+          <div id="dash-top-trends">
+            <div class="empty" style="padding:24px">
+              <div class="empty-icon">↑</div>
+              <div class="empty-title">No data yet</div>
+              <div class="empty-sub">Click "Fetch Live Trends" to load data</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">Recent Activity</div>
+          <div id="dash-recent-notifs">
+            <div class="empty" style="padding:20px"><div class="empty-sub">Events will appear here</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── TRENDS ──────────────────────────────────────────────── -->
+    <section id="page-trends" class="page">
+      <div class="ph">
+        <div class="ph-row">
+          <div>
+            <div class="ph-title">Trend Feed</div>
+            <div class="ph-sub" id="trends-meta">YouTube RSS + Reddit JSON — no API keys required</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="Actions.fetchTrends(true)">↺ Force Refresh</button>
+            <button class="btn btn-primary" onclick="Actions.fetchTrends()" id="fetch-btn-2">⚡ Fetch Trends</button>
+          </div>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <span class="filter-label">HOOK:</span>
+        <button class="filter-pill active" onclick="Actions.setHookFilter('',this)">All</button>
+        <button class="filter-pill" onclick="Actions.setHookFilter('curiosity_gap',this)">Curiosity Gap</button>
+        <button class="filter-pill" onclick="Actions.setHookFilter('number_hook',this)">Number</button>
+        <button class="filter-pill" onclick="Actions.setHookFilter('pattern_interrupt',this)">Pattern Break</button>
+        <button class="filter-pill" onclick="Actions.setHookFilter('fear_hook',this)">Fear</button>
+        <button class="filter-pill" onclick="Actions.setHookFilter('transformation',this)">Transform</button>
+        <button class="filter-pill" onclick="Actions.setHookFilter('question_hook',this)">Question</button>
+        <button class="filter-pill" onclick="Actions.setHookFilter('list_format',this)">List</button>
+      </div>
+      <div id="trends-list">
+        <div class="empty">
+          <div class="empty-icon">↑</div>
+          <div class="empty-title">No trends loaded</div>
+          <div class="empty-sub">Click Fetch Trends above</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── GENERATE ─────────────────────────────────────────────── -->
+    <section id="page-generate" class="page">
+      <div class="ph">
+        <div class="ph-row">
+          <div>
+            <div class="ph-title">Decision Engine</div>
+            <div class="ph-sub">10 options → 6-dimension scoring → AI selection → script</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls row -->
+      <div style="display:flex;gap:12px;margin-bottom:16px;align-items:flex-end;flex-wrap:wrap">
+        <div class="input-group" style="margin:0;min-width:160px">
+          <label class="input-label">Niche</label>
+          <select id="gen-niche">
+            <option value="general">General</option>
+            <option value="finance">Finance & Money</option>
+            <option value="fitness">Fitness & Health</option>
+            <option value="tech">Technology & AI</option>
+            <option value="relationships">Relationships</option>
+            <option value="productivity">Productivity</option>
+            <option value="mindset">Mindset & Psychology</option>
+            <option value="gaming">Gaming</option>
+            <option value="food">Food & Cooking</option>
+            <option value="travel">Travel</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="generate-btn" onclick="Actions.runEngine()" style="height:36px">
+          ✦ Generate
+        </button>
+        <div style="font-size:11px;color:var(--text3);font-family:var(--mono);align-self:center">
+          Top hook: <span id="qstat-hook" style="color:var(--amber)">—</span> ·
+          Avg score: <span id="qstat-avg" style="color:var(--green)">—</span>
+        </div>
+      </div>
+
+      <!-- Sub-tabs -->
+      <div class="subtabs">
+        <button class="subtab-btn active" data-tab="ideas" onclick="switchTab('ideas',this)">Ideas (10)</button>
+        <button class="subtab-btn" data-tab="script" onclick="switchTab('script',this)">Script</button>
+        <button class="subtab-btn" data-tab="video" onclick="switchTab('video',this)">Build Video</button>
+      </div>
+
+      <!-- Ideas tab -->
+      <div id="tab-ideas" class="subtab-pane active">
+        <div id="ideas-container">
+          <div class="empty">
+            <div class="empty-icon">✦</div>
+            <div class="empty-title">No ideas generated yet</div>
+            <div class="empty-sub">Select a niche and click Generate</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Script tab -->
+      <div id="tab-script" class="subtab-pane">
+        <div id="script-container">
+          <div class="empty">
+            <div class="empty-icon">📝</div>
+            <div class="empty-title">No script yet</div>
+            <div class="empty-sub">Generate content first</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video build tab -->
+      <div id="tab-video" class="subtab-pane">
+        <div class="card" style="max-width:520px">
+          <div class="card-header">Video Assembly</div>
+          <div class="input-group">
+            <label class="input-label">Color Palette</label>
+            <select id="palette-select">
+              <option value="amber">Amber (default)</option>
+              <option value="crimson">Crimson</option>
+              <option value="ice">Ice Blue</option>
+              <option value="void">Void Purple</option>
+              <option value="forest">Forest Green</option>
+              <option value="solar">Solar Orange</option>
+            </select>
+          </div>
+          <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:14px;line-height:1.6">
+            PIL frames + Ken Burns zoom + FFmpeg H.264<br>
+            Output: 1080×1920 · 9:16 TikTok/Shorts-ready · MP4
+          </div>
+          <div id="video-build-status" style="margin-bottom:12px;display:none">
+            <div style="font-size:11px;font-family:var(--mono);color:var(--amber);margin-bottom:6px" id="video-build-msg">Building...</div>
+            <div class="progress-wrap"><div class="progress-fill" id="video-build-bar" style="width:0%"></div></div>
+          </div>
+          <button class="btn btn-primary" id="generate-video-btn" onclick="Actions.buildVideo()">
+            ⚡ Build Video
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── VIDEOS ────────────────────────────────────────────────── -->
+    <section id="page-videos" class="page">
+      <div class="ph">
+        <div class="ph-row">
+          <div>
+            <div class="ph-title">Video Library</div>
+            <div class="ph-sub">9:16 TikTok-ready · download MP4 · export package</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="UI.renderVideos()">↺ Refresh</button>
+        </div>
+      </div>
+      <div id="videos-list">
+        <div class="empty">
+          <div class="empty-icon">▶</div>
+          <div class="empty-title">No videos yet</div>
+          <div class="empty-sub">Generate a script then click ⚡ Build Video</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PUBLISH ───────────────────────────────────────────────── -->
+    <section id="page-publish" class="page">
+      <div class="ph">
+        <div class="ph-title">Publish</div>
+        <div class="ph-sub">Export package · TikTok caption · YouTube Studio</div>
+      </div>
+      <div id="publish-container">
+        <div class="empty">
+          <div class="empty-icon">📤</div>
+          <div class="empty-title">Build a video first</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── LEARNING ──────────────────────────────────────────────── -->
+    <section id="page-learning" class="page">
+      <div class="ph">
+        <div class="ph-title">Pattern Learning</div>
+        <div class="ph-sub">Bayesian weight system — adapts from real performance data</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">Current Pattern Weights</div>
+          <div id="weights-display">
+            <div class="empty" style="padding:20px"><div class="empty-sub">Loading weights...</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">Log Performance Data</div>
+          <div class="card-body" style="margin-bottom:12px">
+            Enter real performance data to update pattern weights. The system learns which hooks and triggers actually perform.
+          </div>
+          <div class="perf-form">
+            <div class="input-group" style="margin:0">
+              <label class="input-label">Script ID</label>
+              <input type="text" id="perf-script-id" placeholder="e.g. abc123def456">
+            </div>
+            <div class="input-group" style="margin:0">
+              <label class="input-label">Platform</label>
+              <select id="perf-platform">
+                <option value="tiktok">TikTok</option>
+                <option value="youtube_shorts">YouTube Shorts</option>
+                <option value="reels">Instagram Reels</option>
+              </select>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="input-group" style="margin:0">
+                <label class="input-label">Views</label>
+                <input type="number" id="perf-views" placeholder="125000">
+              </div>
+              <div class="input-group" style="margin:0">
+                <label class="input-label">Likes</label>
+                <input type="number" id="perf-likes" placeholder="8400">
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="Actions.logPerf()">📊 Log &amp; Update Weights</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── NOTIFICATIONS PAGE ────────────────────────────────────── -->
+    <section id="page-notifications" class="page">
+      <div class="ph">
+        <div class="ph-row">
+          <div>
+            <div class="ph-title">Notification Center</div>
+            <div class="ph-sub">Real-time event feed · Telegram · Email · In-App SSE</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="testNotification()">🧪 Test</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearNotifs()">Clear All</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Channel Status -->
+      <div class="grid-3" style="margin-bottom:16px">
+        <div class="card">
+          <div class="card-header">In-App (SSE)</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span class="notif-dot live" id="sse-status-dot"></span>
+            <span style="font-size:12px;font-weight:700" id="sse-status-text">Connecting...</span>
+          </div>
+          <div class="card-body">Live stream active in all sessions. Always enabled.</div>
+        </div>
+        <div class="card">
+          <div class="card-header">Telegram Bot</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span class="notif-dot" id="tg-status-dot"></span>
+            <span style="font-size:12px;font-weight:700" id="tg-status-text">Not configured</span>
+          </div>
+          <div class="card-body" style="font-family:var(--mono);font-size:10px;line-height:1.8">
+            Set env vars:<br>
+            TELEGRAM_BOT_TOKEN<br>
+            TELEGRAM_CHAT_ID
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">Email (SMTP)</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span class="notif-dot" id="email-status-dot"></span>
+            <span style="font-size:12px;font-weight:700" id="email-status-text">Not configured</span>
+          </div>
+          <div class="card-body" style="font-family:var(--mono);font-size:10px;line-height:1.8">
+            Set env vars:<br>
+            NOTIFY_SMTP_HOST / PORT<br>
+            NOTIFY_SMTP_USER / PASS<br>
+            NOTIFY_EMAIL_TO
+          </div>
+        </div>
+      </div>
+
+      <!-- Full event log -->
+      <div class="card">
+        <div class="card-header">Event Log</div>
+        <div id="notif-full-log" style="display:flex;flex-direction:column;gap:6px;max-height:500px;overflow-y:auto">
+          <div class="empty" style="padding:20px"><div class="empty-sub">No events yet</div></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="/static/js/state.js"></script>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/ui.js"></script>
+<script src="/static/js/main.js"></script>
+<script>
+// ── Notification System (in-app SSE) ──────────────────────────────────────────
+
+let _unreadCount = 0;
+let _notifItems  = [];
+let _sseConn     = null;
+
+function _addNotif(event) {
+  _notifItems.unshift(event);
+  if (_notifItems.length > 100) _notifItems.pop();
+  _unreadCount++;
+  _renderNotifFeed();
+  _updateBadge();
+
+  // Also flash toast for important events
+  const important = ["error","video","report","success"];
+  if (important.includes(event.type)) {
+    UI.toast(event.message, event.type === "error" ? "err" : event.type === "success" ? "ok" : "info");
+  }
+
+  // Update dashboard recent activity
+  _renderDashActivity();
+}
+
+function _renderNotifFeed() {
+  const feed = document.getElementById("notif-feed");
+  const log  = document.getElementById("notif-full-log");
+  if (!feed) return;
+
+  const empty = document.getElementById("notif-empty");
+  if (empty) empty.style.display = _notifItems.length ? "none" : "block";
+
+  const items = _notifItems.slice(0, 50);
+  const html = items.map((e, i) => `
+    <div class="notif-item ${i === 0 ? 'unread' : ''} type-${e.type||'info'}">
+      <div class="notif-row1">
+        <span class="notif-title-text">${e.icon||''} ${e.title||e.type}</span>
+        <span class="notif-ts">${e.ts||''}</span>
+      </div>
+      <div class="notif-msg">${e.message||''}</div>
+      ${e.metadata && Object.keys(e.metadata).length ? `
+        <div class="notif-meta">
+          ${Object.entries(e.metadata).slice(0,4).map(([k,v])=>`<span>${k}: ${v}</span>`).join('')}
+        </div>` : ''}
+    </div>`).join('');
+
+  feed.innerHTML = html || '<div id="notif-empty" style="text-align:center;padding:32px;color:var(--text3);font-size:12px">No events yet</div>';
+  if (log) log.innerHTML = html || '<div class="empty" style="padding:20px"><div class="empty-sub">No events yet</div></div>';
+}
+
+function _renderDashActivity() {
+  const el = document.getElementById("dash-recent-notifs");
+  if (!el) return;
+  const recent = _notifItems.slice(0, 8);
+  if (!recent.length) return;
+  el.innerHTML = recent.map(e => `
+    <div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);align-items:flex-start">
+      <span style="font-size:13px;flex-shrink:0">${e.icon||'ℹ️'}</span>
+      <div style="flex:1">
+        <div style="font-size:11px;font-weight:600;color:var(--text);line-height:1.4">${e.title||e.type}</div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${e.ts}</div>
+      </div>
+    </div>`).join('');
+}
+
+function _updateBadge() {
+  const badge = document.getElementById("bell-count");
+  const nb    = document.getElementById("notif-badge");
+  const dot   = document.getElementById("sidebar-notif-dot");
+  if (badge) {
+    badge.textContent = _unreadCount > 99 ? "99+" : _unreadCount;
+    badge.style.display = _unreadCount > 0 ? "block" : "none";
+  }
+  if (nb) {
+    nb.textContent = _unreadCount;
+    nb.style.display = _unreadCount > 0 ? "inline" : "none";
+  }
+  if (dot) dot.classList.toggle("live", _unreadCount > 0);
+}
+
+function toggleNotifDrawer() {
+  const d = document.getElementById("notif-drawer");
+  d.classList.toggle("open");
+  if (d.classList.contains("open")) {
+    _unreadCount = 0;
+    _updateBadge();
+    document.querySelectorAll(".notif-item").forEach(el => el.classList.remove("unread"));
+  }
+}
+
+function clearNotifs() {
+  _notifItems = [];
+  _unreadCount = 0;
+  _updateBadge();
+  _renderNotifFeed();
+  _renderDashActivity();
+}
+
+// ── SSE Connection ────────────────────────────────────────────────────────────
+
+function connectSSE() {
+  if (_sseConn) { _sseConn.close(); }
+
+  const dot  = document.getElementById("sse-status-dot");
+  const text = document.getElementById("sse-status-text");
+
+  try {
+    _sseConn = new EventSource("/api/notifications/stream");
+
+    _sseConn.onopen = () => {
+      if (dot)  { dot.classList.add("live"); }
+      if (text) text.textContent = "Connected";
+    };
+
+    _sseConn.onmessage = (e) => {
+      try {
+        const event = JSON.parse(e.data);
+        _addNotif(event);
+      } catch (_) {}
+    };
+
+    _sseConn.onerror = () => {
+      if (dot)  dot.classList.remove("live");
+      if (text) text.textContent = "Reconnecting...";
+      // Auto-reconnect after 5s
+      setTimeout(connectSSE, 5000);
+    };
+  } catch (err) {
+    if (text) text.textContent = "SSE unavailable";
+  }
+}
+
+// ── Channel config status ─────────────────────────────────────────────────────
+
+async function checkChannelConfig() {
+  const h = await API.health();
+  if (!h.ok) return;
+  // We can only infer from env presence on backend — use a simple ping
+  const tgDot  = document.getElementById("tg-status-dot");
+  const tgText = document.getElementById("tg-status-text");
+  const emDot  = document.getElementById("email-status-dot");
+  const emText = document.getElementById("email-status-text");
+  // Check via test endpoint response metadata (extend if needed)
+  // For now show basic state based on NOTIFY_CHANNELS from health
+}
+
+async function testNotification() {
+  const res = await fetch("/api/notify/test");
+  const d   = await res.json();
+  if (d.ok) UI.toast("Test notification sent to all channels", "ok");
+  else UI.toast("Test failed", "err");
+}
+
+// ── Override video status polling to update inline bar ────────────────────────
+
+const _origPoll = UI.pollVideoProgress.bind(UI);
+UI.pollVideoProgress = function(videoId, onDone) {
+  const statusBox = document.getElementById("video-build-status");
+  const bar       = document.getElementById("video-build-bar");
+  const msg       = document.getElementById("video-build-msg");
+  if (statusBox) statusBox.style.display = "block";
+
+  let tries = 0;
+  const iv = setInterval(async () => {
+    const res = await API.videoStatus(videoId);
+    if (!res.ok || tries > 180) { clearInterval(iv); return; }
+    const d = res.data;
+    const pct = d.progress || 0;
+    if (bar) bar.style.width = pct + "%";
+    if (msg) msg.textContent = d.message || `Building... ${pct}%`;
+    const genBtn = document.getElementById("generate-video-btn");
+    if (genBtn) genBtn.textContent = `⟳ ${pct}%`;
+
+    if (d.status === "done" || d.video_ready) {
+      clearInterval(iv);
+      if (genBtn) { genBtn.textContent = "⚡ Build Video"; genBtn.disabled = false; }
+      if (msg) msg.textContent = "✅ Complete!";
+      UI.toast("Video ready — check Videos tab", "ok");
+      if (onDone) onDone(d);
+      Actions.loadStats();
+    } else if (d.status === "failed" || d.status === "error") {
+      clearInterval(iv);
+      if (genBtn) { genBtn.textContent = "⚡ Build Video"; genBtn.disabled = false; }
+      if (msg) msg.textContent = "❌ " + (d.message || "Failed");
+      UI.toast("Video failed: " + (d.message || ""), "err");
+    }
+    tries++;
+  }, 2000);
+};
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  connectSSE();
+  checkChannelConfig();
+  // Load existing notification history
+  fetch("/api/notifications?limit=30")
+    .then(r => r.json())
+    .then(d => {
+      (d.notifications || []).reverse().forEach(_addNotif);
+    })
+    .catch(() => {});
+});
+</script>
+</body>
+</html>
