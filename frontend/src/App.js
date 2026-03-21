@@ -1,113 +1,185 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './App.css';
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || '';
+const API = process.env.REACT_APP_BACKEND_URL || '';
+
+// API with retry
+const api = {
+  async get(path, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const res = await fetch(`${API}${path}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } catch (e) {
+        if (i === retries - 1) throw e;
+        await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+      }
+    }
+  },
+  async post(path, body, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const res = await fetch(`${API}${path}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } catch (e) {
+        if (i === retries - 1) throw e;
+        await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+      }
+    }
+  },
+};
 
 // Progress steps
 const STEPS = [
-  { key: 'analyze', label: 'Analyzing request', icon: '🔍' },
-  { key: 'trends', label: 'Fetching trends', icon: '📈' },
-  { key: 'idea', label: 'Creating idea', icon: '💡' },
-  { key: 'script', label: 'Writing script', icon: '📝' },
-  { key: 'video', label: 'Building video', icon: '🎬' },
-  { key: 'voice', label: 'Generating voice', icon: '🎙️' },
-  { key: 'final', label: 'Finalizing', icon: '✨' },
+  { key: 'init', label: 'Initializing', icon: '🚀' },
+  { key: 'trends', label: 'Loading Trends', icon: '📊' },
+  { key: 'ideas', label: 'Generating Ideas', icon: '💡' },
+  { key: 'scoring', label: 'AI Scoring', icon: '🎯' },
+  { key: 'script', label: 'Writing Script', icon: '📝' },
+  { key: 'voice', label: 'AI Voice', icon: '🎙️' },
+  { key: 'package', label: 'Packaging', icon: '📦' },
+  { key: 'done', label: 'Complete', icon: '✅' },
 ];
 
 function App() {
+  // State
+  const [view, setView] = useState('dashboard');
+  const [systemStatus, setSystemStatus] = useState(null);
+  const [trends, setTrends] = useState([]);
+  const [trendStats, setTrendStats] = useState(null);
+  const [vault, setVault] = useState([]);
+  
+  // Generation state
   const [prompt, setPrompt] = useState('');
+  const [taskId, setTaskId] = useState(null);
+  const [taskStatus, setTaskStatus] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [step, setStep] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
-  const [showHistory, setShowHistory] = useState(false);
-  const [history, setHistory] = useState([]);
-  const videoRef = useRef(null);
-  const inputRef = useRef(null);
+  
+  const pollRef = useRef(null);
 
-  // Get current step index
-  const getCurrentStepIndex = () => {
-    const stepLower = step.toLowerCase();
-    if (stepLower.includes('analyz')) return 0;
-    if (stepLower.includes('trend')) return 1;
-    if (stepLower.includes('idea') || stepLower.includes('creat')) return 2;
-    if (stepLower.includes('script') || stepLower.includes('writ')) return 3;
-    if (stepLower.includes('video') || stepLower.includes('render') || stepLower.includes('build')) return 4;
-    if (stepLower.includes('voice') || stepLower.includes('audio')) return 5;
-    if (stepLower.includes('final') || stepLower.includes('done')) return 6;
-    return Math.floor(progress / 15);
+  // Load initial data
+  useEffect(() => {
+    loadSystemStatus();
+    loadTrends();
+    loadVault();
+    
+    // Poll system status every 30s
+    const interval = setInterval(loadSystemStatus, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadSystemStatus = async () => {
+    try {
+      const data = await api.get('/api/health');
+      setSystemStatus(data);
+    } catch (e) {
+      setSystemStatus({ status: 'offline' });
+    }
   };
 
-  // Poll job status
-  const pollJob = async (jobId) => {
-    const maxAttempts = 200;
-    let attempts = 0;
+  const loadTrends = async () => {
+    try {
+      const data = await api.get('/api/trends');
+      setTrends(data.trends || []);
+      
+      const stats = await api.get('/api/trends/stats');
+      if (!stats.error) setTrendStats(stats);
+    } catch (e) {}
+  };
 
-    const poll = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/job/${jobId}`);
-        const data = await res.json();
+  const loadVault = async () => {
+    try {
+      const data = await api.get('/api/vault');
+      setVault(data.videos || []);
+    } catch (e) {}
+  };
 
-        setProgress(data.progress || 0);
-        setStep(data.step || '');
+  // Fetch live trends
+  const fetchTrends = async () => {
+    try {
+      await api.post('/api/trends/fetch', {});
+      // Wait and reload
+      setTimeout(loadTrends, 3000);
+      setTimeout(loadTrends, 8000);
+    } catch (e) {
+      setError('Failed to fetch trends');
+    }
+  };
 
-        if (data.status === 'complete' && data.result) {
-          setResult(data.result);
-          setIsGenerating(false);
-          return;
-        }
+  // Get step index from status
+  const getStepIndex = useCallback((status) => {
+    if (!status?.step) return 0;
+    const step = status.step.toLowerCase();
+    if (step.includes('init')) return 0;
+    if (step.includes('trend') || step.includes('load')) return 1;
+    if (step.includes('generat') && step.includes('idea')) return 2;
+    if (step.includes('scor')) return 3;
+    if (step.includes('script') || step.includes('writ')) return 4;
+    if (step.includes('voice') || step.includes('audio')) return 5;
+    if (step.includes('packag') || step.includes('creat')) return 6;
+    if (step.includes('complete') || step.includes('final')) return 7;
+    return Math.floor((status.progress || 0) / 12.5);
+  }, []);
 
-        if (data.status === 'error') {
-          setError(data.step || 'Generation failed. Please try again.');
-          setIsGenerating(false);
-          return;
-        }
-
-        attempts++;
-        if (attempts < maxAttempts) {
-          setTimeout(poll, 1000);
-        } else {
-          setError('Generation timed out. Please try again.');
-          setIsGenerating(false);
-        }
-      } catch (e) {
-        if (attempts < 3) {
-          attempts++;
-          setTimeout(poll, 2000);
-        } else {
-          setError('Connection error. Please check your internet.');
-          setIsGenerating(false);
-        }
+  // Poll task status
+  const pollTask = useCallback(async (id) => {
+    try {
+      const data = await api.get(`/api/task/${id}`);
+      setTaskStatus(data);
+      
+      if (data.status === 'complete' && data.result) {
+        setResult(data.result);
+        setIsGenerating(false);
+        setView('result');
+        loadVault(); // Refresh vault
+        if (pollRef.current) clearInterval(pollRef.current);
+        return;
       }
-    };
+      
+      if (data.status === 'error') {
+        setError(data.step || 'Generation failed');
+        setIsGenerating(false);
+        if (pollRef.current) clearInterval(pollRef.current);
+        return;
+      }
+    } catch (e) {
+      // Keep polling on error
+    }
+  }, []);
 
-    poll();
-  };
-
-  // Handle generate
-  const handleGenerate = async () => {
-    if (!prompt.trim() || isGenerating) return;
-
+  // Start generation
+  const startGeneration = async () => {
+    if (isGenerating) return;
+    
     setIsGenerating(true);
-    setProgress(0);
-    setStep('Starting...');
+    setTaskStatus({ status: 'processing', progress: 0, step: 'Starting...' });
     setResult(null);
     setError('');
+    setView('generate');
 
     try {
-      const res = await fetch(`${API_BASE}/api/generate-all`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt.trim() }),
+      const data = await api.post('/api/generate', { 
+        prompt: prompt || 'viral trending content' 
       });
-
-      const data = await res.json();
-
-      if (data.job_id) {
-        pollJob(data.job_id);
+      
+      if (data.task_id) {
+        setTaskId(data.task_id);
+        
+        // Start polling every 1.5 seconds
+        pollRef.current = setInterval(() => pollTask(data.task_id), 1500);
+        
+        // Initial poll
+        setTimeout(() => pollTask(data.task_id), 500);
       } else {
-        setError(data.detail || 'Failed to start. Please try again.');
+        setError('Failed to start generation');
         setIsGenerating(false);
       }
     } catch (e) {
@@ -116,290 +188,382 @@ function App() {
     }
   };
 
-  // Handle enter key
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleGenerate();
-    }
-  };
-
   // Reset
-  const handleReset = () => {
-    setPrompt('');
+  const reset = () => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    setView('dashboard');
     setResult(null);
+    setTaskStatus(null);
+    setTaskId(null);
     setError('');
-    setProgress(0);
-    setStep('');
-    inputRef.current?.focus();
+    setPrompt('');
   };
 
-  // Load history
-  const loadHistory = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/history`);
-      const data = await res.json();
-      setHistory(data.history || []);
-    } catch (e) {}
-  };
-
-  // Example prompts
-  const examples = [
-    { emoji: '💰', text: 'Create a viral video about passive income' },
-    { emoji: '💪', text: 'Make a fitness motivation short' },
-    { emoji: '🧠', text: 'Create a productivity hack video' },
-    { emoji: '❤️', text: 'Make a relationship advice TikTok' },
-  ];
-
-  const currentStepIndex = getCurrentStepIndex();
+  const stepIndex = taskStatus ? getStepIndex(taskStatus) : 0;
 
   return (
-    <div className="app" data-testid="app">
-      {/* Animated background */}
-      <div className="bg-gradient">
-        <div className="bg-orb bg-orb-1" />
-        <div className="bg-orb bg-orb-2" />
-        <div className="bg-orb bg-orb-3" />
-      </div>
-
-      {/* Container */}
-      <div className="container">
-        {/* Header */}
-        <header className="header">
-          <div className="logo" data-testid="logo">
-            <div className="logo-icon">⚡</div>
-            <span className="logo-text">ViralForge</span>
-            <span className="logo-badge">PRO</span>
+    <div className="factory" data-testid="app">
+      {/* Header */}
+      <header className="header">
+        <div className="logo">
+          <span className="logo-icon">⚡</span>
+          <span className="logo-text">ViralForge</span>
+          <span className="logo-badge">v3 CLOUD</span>
+        </div>
+        <div className="status-bar">
+          <div className={`status-item ${systemStatus?.status === 'operational' ? 'online' : 'offline'}`}>
+            <span className="status-dot" />
+            <span>{systemStatus?.status === 'operational' ? 'ONLINE' : 'CONNECTING'}</span>
           </div>
-        </header>
+          <div className="status-item">
+            <span>☁️</span>
+            <span>{systemStatus?.database || 'cloud'}</span>
+          </div>
+          <div className="status-item">
+            <span>📊</span>
+            <span>{trends.length} Trends</span>
+          </div>
+          <div className="status-item">
+            <span>🎬</span>
+            <span>{vault.length} Videos</span>
+          </div>
+        </div>
+      </header>
+
+      <div className="body">
+        {/* Sidebar */}
+        <nav className="sidebar">
+          <button className={`nav-btn ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>
+            <span>📊</span> Dashboard
+          </button>
+          <button className={`nav-btn ${view === 'generate' || view === 'result' ? 'active' : ''}`} onClick={() => result ? setView('result') : setView('generate')}>
+            <span>🚀</span> Generate
+          </button>
+          <button className={`nav-btn ${view === 'vault' ? 'active' : ''}`} onClick={() => { setView('vault'); loadVault(); }}>
+            <span>📦</span> Video Vault
+          </button>
+          
+          <div className="nav-divider" />
+          <div className="nav-label">CLOUD ENGINE</div>
+          <div className="engine-stat">
+            <span>AI</span>
+            <span className="val">Gemini 2.0</span>
+          </div>
+          <div className="engine-stat">
+            <span>Voice</span>
+            <span className="val">OpenAI TTS</span>
+          </div>
+          <div className="engine-stat">
+            <span>Storage</span>
+            <span className="val">MongoDB</span>
+          </div>
+        </nav>
 
         {/* Main */}
         <main className="main">
-          {!result ? (
-            <div className={`input-section ${isGenerating ? 'generating' : ''}`} data-testid="input-section">
-              <h1 className="title">
-                Turn ideas into<br />
-                <span className="title-accent">viral videos</span>
-              </h1>
-              <p className="subtitle">
-                Type anything — we'll create the idea, script, voice & video automatically
-              </p>
-
-              <div className="input-card">
-                <textarea
-                  ref={inputRef}
-                  className="main-input"
-                  placeholder="Create a viral video about..."
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  disabled={isGenerating}
-                  rows={2}
-                  data-testid="main-input"
-                />
-                
-                <button
-                  className={`generate-btn ${isGenerating ? 'loading' : ''}`}
-                  onClick={handleGenerate}
-                  disabled={!prompt.trim() || isGenerating}
-                  data-testid="generate-btn"
-                >
-                  {isGenerating ? (
-                    <>
-                      <span className="btn-spinner" />
-                      <span>Generating...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="btn-icon">✦</span>
-                      <span>Generate Video</span>
-                    </>
-                  )}
+          {/* Dashboard */}
+          {view === 'dashboard' && (
+            <div className="dashboard">
+              <div className="page-header">
+                <h1>🏭 Control Room</h1>
+                <button className="btn-primary" onClick={fetchTrends}>
+                  🔄 Fetch Live Trends
                 </button>
               </div>
 
+              {/* Stats */}
+              {trendStats && (
+                <div className="stats-grid">
+                  <div className="stat-card">
+                    <div className="stat-label">Total Trends</div>
+                    <div className="stat-value">{trendStats.total_trends || 0}</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-label">Avg Score</div>
+                    <div className="stat-value">{trendStats.avg_score || 0}</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-label">Top Hook</div>
+                    <div className="stat-value accent">{trendStats.top_hook?.replace('_', ' ') || '—'}</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-label">Videos Created</div>
+                    <div className="stat-value">{vault.length}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Generate */}
+              <div className="quick-gen">
+                <h2>⚡ Magic Generation</h2>
+                <p>One click: Trend Intelligence → AI Ideas → Script → Voice → Video Package</p>
+                <div className="gen-row">
+                  <input
+                    type="text"
+                    placeholder="Enter niche (or leave empty for auto)"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    className="gen-input"
+                  />
+                  <button className="btn-magic" onClick={startGeneration} disabled={isGenerating}>
+                    ✨ GENERATE
+                  </button>
+                </div>
+              </div>
+
+              {/* Trends */}
+              <div className="trends-section">
+                <h2>📈 Trend Intelligence ({trends.length})</h2>
+                {trends.length > 0 ? (
+                  <div className="trends-table">
+                    <div className="table-head">
+                      <span className="col-rank">#</span>
+                      <span className="col-title">Title</span>
+                      <span className="col-hook">Hook Type</span>
+                      <span className="col-score">Score</span>
+                    </div>
+                    {trends.slice(0, 12).map((t, i) => (
+                      <div key={t.id} className="table-row">
+                        <span className="col-rank">{i + 1}</span>
+                        <span className="col-title">{t.title}</span>
+                        <span className="col-hook">
+                          <span className={`badge ${t.analysis?.hook_type || 'neutral'}`}>
+                            {t.analysis?.hook_type?.replace('_', ' ') || 'neutral'}
+                          </span>
+                        </span>
+                        <span className="col-score">
+                          <span className={`score ${t.viral_score >= 60 ? 'high' : t.viral_score >= 40 ? 'mid' : 'low'}`}>
+                            {t.viral_score}
+                          </span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="empty">
+                    <span>📊</span>
+                    <p>No trends loaded. Click "Fetch Live Trends" to start.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Generate View */}
+          {view === 'generate' && (
+            <div className="generate-view">
+              <h1>🎬 Video Factory</h1>
+              <p className="subtitle">Cloud-powered pipeline: Trends → Ideas → Script → Voice → Package</p>
+
               {/* Progress */}
-              {isGenerating && (
-                <div className="progress-section" data-testid="progress-section">
+              {(isGenerating || taskStatus) && (
+                <div className="progress-panel">
                   <div className="progress-steps">
                     {STEPS.map((s, i) => (
-                      <div 
-                        key={s.key} 
-                        className={`progress-step ${i < currentStepIndex ? 'done' : i === currentStepIndex ? 'active' : ''}`}
-                      >
-                        <div className="step-icon">{i < currentStepIndex ? '✓' : s.icon}</div>
+                      <div key={s.key} className={`step ${i < stepIndex ? 'done' : i === stepIndex ? 'active' : ''}`}>
+                        <div className="step-icon">{i < stepIndex ? '✓' : s.icon}</div>
                         <div className="step-label">{s.label}</div>
                       </div>
                     ))}
                   </div>
                   
-                  <div className="progress-bar-container">
+                  <div className="progress-wrap">
                     <div className="progress-bar">
-                      <div className="progress-fill" style={{ width: `${progress}%` }} />
+                      <div className="progress-fill" style={{ width: `${taskStatus?.progress || 0}%` }} />
                     </div>
-                    <div className="progress-text">
-                      <span>{step}</span>
-                      <span className="progress-percent">{progress}%</span>
+                    <div className="progress-info">
+                      <span>{taskStatus?.step || 'Starting...'}</span>
+                      <span className="pct">{taskStatus?.progress || 0}%</span>
                     </div>
                   </div>
+                  
+                  {taskId && (
+                    <div className="task-id">
+                      Task ID: <code>{taskId}</code>
+                      <span className="hint">(You can close this page - processing continues in cloud)</span>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Error */}
               {error && (
-                <div className="error-card" data-testid="error-message">
-                  <span className="error-icon">⚠️</span>
-                  <span>{error}</span>
-                  <button className="error-retry" onClick={handleGenerate}>Retry</button>
+                <div className="error-panel">
+                  <span>⚠️ {error}</span>
+                  <button onClick={startGeneration}>Retry</button>
                 </div>
               )}
 
-              {/* Examples */}
-              {!isGenerating && (
-                <div className="examples">
-                  <span className="examples-label">Try these:</span>
-                  <div className="examples-list">
-                    {examples.map((ex, i) => (
-                      <button 
-                        key={i} 
-                        className="example-btn"
-                        onClick={() => setPrompt(ex.text)}
-                      >
-                        <span>{ex.emoji}</span>
-                        <span>{ex.text.replace('Create a viral video about ', '').replace('Make a ', '')}</span>
-                      </button>
-                    ))}
+              {/* Start Panel */}
+              {!isGenerating && !taskStatus && (
+                <div className="start-panel">
+                  <div className="input-group">
+                    <label>Niche / Topic</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., fitness motivation, passive income..."
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && startGeneration()}
+                    />
                   </div>
+                  <button className="btn-generate" onClick={startGeneration}>
+                    🚀 Start Generation
+                  </button>
+                  <p className="hint">Leave empty for auto-selection based on trending topics</p>
                 </div>
               )}
             </div>
-          ) : (
-            /* Result */
-            <div className="result-section" data-testid="result-section">
-              {/* Video */}
-              {result.video?.ready && (
-                <div className="video-wrapper">
-                  <div className="video-container">
-                    <video
-                      ref={videoRef}
-                      className="video-player"
-                      controls
-                      autoPlay
-                      loop
-                      playsInline
-                      src={`${API_BASE}${result.video.url}`}
-                      data-testid="video-player"
-                    />
-                  </div>
-                  <div className="video-badge">9:16 TikTok Ready</div>
-                </div>
-              )}
+          )}
 
-              {/* Content */}
-              <div className="result-cards">
-                {/* Idea */}
-                <div className="result-card" data-testid="idea-card">
-                  <div className="card-header">
-                    <span className="card-emoji">💡</span>
-                    <span className="card-title">Viral Idea</span>
-                    <span className="card-tag">{result.idea?.niche}</span>
+          {/* Result View */}
+          {view === 'result' && result && (
+            <div className="result-view">
+              <div className="result-header">
+                <h1>✅ Generation Complete!</h1>
+                <button className="btn-new" onClick={reset}>+ New Video</button>
+              </div>
+
+              <div className="result-grid">
+                {/* Winner Card */}
+                <div className="winner-card">
+                  <div className="card-head">
+                    <span>🏆</span>
+                    <span>Selected Idea</span>
+                    <span className="score-badge">{result.winner?.final_score}/100</span>
                   </div>
-                  <h2 className="idea-title">{result.idea?.title}</h2>
-                  <p className="idea-desc">{result.idea?.concept}</p>
-                  {result.idea?.why_viral && (
-                    <div className="viral-reason">
-                      <strong>Why it works:</strong> {result.idea.why_viral}
-                    </div>
-                  )}
+                  <h2>{result.winner?.title}</h2>
+                  <p className="hook">"{result.winner?.hook}"</p>
+                  <p className="concept">{result.winner?.concept}</p>
+                  
+                  <div className="scores">
+                    {Object.entries(result.winner?.scores || {}).map(([key, val]) => (
+                      <div key={key} className="score-item">
+                        <span>{key.replace('_', ' ')}</span>
+                        <span>{val}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Hook */}
-                <div className="result-card hook-card" data-testid="hook-card">
-                  <div className="card-header">
-                    <span className="card-emoji">🎯</span>
-                    <span className="card-title">Opening Hook</span>
-                    <span className="card-tag accent">{result.idea?.hook_type?.replace('_', ' ')}</span>
-                  </div>
-                  <blockquote className="hook-quote">
-                    "{result.idea?.hook || result.script?.hook}"
-                  </blockquote>
-                  <p className="hook-note">First 3 seconds — stops the scroll instantly</p>
-                </div>
-
-                {/* Script */}
-                <div className="result-card script-card" data-testid="script-card">
-                  <div className="card-header">
-                    <span className="card-emoji">📝</span>
-                    <span className="card-title">Full Script</span>
-                    <span className="card-tag">{result.script?.duration}s</span>
+                {/* Script Card */}
+                <div className="script-card">
+                  <div className="card-head">
+                    <span>📝</span>
+                    <span>Script</span>
+                    <span>{result.script?.duration || 30}s</span>
                   </div>
                   <div className="scenes">
                     {result.script?.scenes?.map((scene, i) => (
                       <div key={i} className={`scene phase-${scene.phase}`}>
-                        <div className="scene-meta">
-                          <span className="scene-phase">{scene.phase}</span>
-                          <span className="scene-time">{scene.duration}s</span>
+                        <div className="scene-head">
+                          <span className="phase">{scene.phase}</span>
+                          <span className="time">{scene.end - scene.start}s</span>
                         </div>
-                        <div className="scene-text">{scene.spoken_text}</div>
-                        {scene.caption_text && (
-                          <div className="scene-caption">📺 {scene.caption_text}</div>
-                        )}
+                        <p className="spoken">{scene.spoken}</p>
+                        <p className="caption">📺 {scene.caption}</p>
                       </div>
                     ))}
                   </div>
-                  
-                  {result.script?.hashtags?.length > 0 && (
-                    <div className="hashtags">
-                      {result.script.hashtags.map((tag, i) => (
-                        <span key={i} className="hashtag">{tag}</span>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
-                {/* Actions */}
-                <div className="result-actions">
-                  {result.video?.ready && (
-                    <a
-                      href={`${API_BASE}${result.video.url}`}
-                      download={`viral_${result.video.id}.mp4`}
-                      className="action-btn primary"
-                      data-testid="download-btn"
-                    >
-                      <span>⬇️</span>
-                      <span>Download Video</span>
-                    </a>
-                  )}
+                {/* Metadata Card */}
+                <div className="meta-card">
+                  <div className="card-head">
+                    <span>📦</span>
+                    <span>Export Package</span>
+                  </div>
+                  
+                  <div className="meta-field">
+                    <label>Title</label>
+                    <input value={result.metadata?.title || ''} readOnly />
+                  </div>
+                  
+                  <div className="meta-field">
+                    <label>Description</label>
+                    <textarea value={result.metadata?.description || ''} readOnly rows={3} />
+                  </div>
+                  
+                  <div className="meta-field">
+                    <label>Hashtags</label>
+                    <div className="tags">
+                      {(result.metadata?.hashtags || []).map((tag, i) => (
+                        <span key={i} className="tag">{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                  
                   <button 
-                    className="action-btn secondary"
+                    className="btn-copy"
                     onClick={() => {
-                      const text = `${result.script?.caption || result.idea?.title}\n\n${result.script?.hashtags?.join(' ') || ''}`;
+                      const text = `${result.metadata?.title || ''}\n\n${result.metadata?.description || ''}\n\n${(result.metadata?.hashtags || []).join(' ')}`;
                       navigator.clipboard.writeText(text);
                     }}
                   >
-                    <span>📋</span>
-                    <span>Copy Caption</span>
-                  </button>
-                  <button 
-                    className="action-btn ghost"
-                    onClick={handleReset}
-                    data-testid="new-btn"
-                  >
-                    <span>✨</span>
-                    <span>Create Another</span>
+                    📋 Copy All
                   </button>
                 </div>
               </div>
+
+              {/* All Ideas */}
+              {result.all_ideas?.length > 1 && (
+                <div className="all-ideas">
+                  <h2>All 10 Ideas (Ranked)</h2>
+                  <div className="ideas-grid">
+                    {result.all_ideas.map((idea, i) => (
+                      <div key={i} className={`idea-card ${i === 0 ? 'winner' : ''}`}>
+                        <div className="idea-rank">#{i + 1}</div>
+                        <div className="idea-score">{idea.final_score}</div>
+                        <h4>{idea.title}</h4>
+                        <p>"{idea.hook}"</p>
+                        <span className={`badge ${idea.hook_type}`}>{idea.hook_type?.replace('_', ' ')}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Video Vault */}
+          {view === 'vault' && (
+            <div className="vault-view">
+              <div className="page-header">
+                <h1>📦 Video Vault</h1>
+                <button className="btn-secondary" onClick={loadVault}>🔄 Refresh</button>
+              </div>
+
+              {vault.length > 0 ? (
+                <div className="vault-grid">
+                  {vault.map((v, i) => (
+                    <div key={v.task_id} className="vault-card">
+                      <div className="vault-header">
+                        <span className="vault-num">#{i + 1}</span>
+                        <span className="vault-score">{v.score}</span>
+                      </div>
+                      <h3>{v.title}</h3>
+                      <p className="vault-hook">"{v.hook}"</p>
+                      <div className="vault-meta">
+                        <span>⏱️ {v.duration}s</span>
+                        <span>📅 {new Date(v.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <div className="vault-tags">
+                        {(v.hashtags || []).slice(0, 4).map((tag, j) => (
+                          <span key={j} className="tag">{tag}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty">
+                  <span>📦</span>
+                  <p>No videos generated yet. Click "Generate" to create your first video!</p>
+                </div>
+              )}
             </div>
           )}
         </main>
-
-        {/* Footer */}
-        <footer className="footer">
-          <span>Powered by AI</span>
-          <span className="footer-dot">•</span>
-          <span>Made for creators</span>
-        </footer>
       </div>
     </div>
   );

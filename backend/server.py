@@ -1,45 +1,37 @@
 """
-ViralForge v3 — Production-Grade Viral Video Generator
-=======================================================
-Premium quality: Dynamic visuals, TikTok-style captions, AI voice
+ViralForge v3 — The Independent Factory
+========================================
+Decentralized Architecture: Cloud AI + External APIs + Persistent Storage
+Anti-Sleep Strategy: All heavy processing via external services
 """
 import os
 import json
 import uuid
 import asyncio
-import shutil
-import tempfile
-import subprocess
-import math
-import re
-import random
-import xml.etree.ElementTree as ET
+import aiohttp
+import hashlib
+import threading
+import base64
 from datetime import datetime, timezone
-from typing import Optional, List, Dict
-from urllib.request import urlopen, Request
-from urllib.error import URLError, HTTPError
+from typing import Optional, List, Dict, Any
+from concurrent.futures import ThreadPoolExecutor
+from queue import Queue
+import feedparser
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 
 load_dotenv()
 
-# PIL for image generation
-try:
-    from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
-    PIL_OK = True
-except ImportError:
-    PIL_OK = False
-
 # Emergent AI integrations
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from emergentintegrations.llm.openai import OpenAITextToSpeech
 
-app = FastAPI(title="ViralForge v3 API")
+app = FastAPI(title="ViralForge v3 — Independent Factory")
 
 # CORS
 app.add_middleware(
@@ -50,80 +42,339 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# MongoDB
+# ============ CLOUD CONNECTIONS ============
+
+# MongoDB Atlas (Persistent Cloud Storage)
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
 DB_NAME = os.environ.get("DB_NAME", "viralforge")
-client = AsyncIOMotorClient(MONGO_URL)
-db = client[DB_NAME]
+mongo_client = AsyncIOMotorClient(MONGO_URL)
+db = mongo_client[DB_NAME]
 
-# Directories
-DATA_DIR = "/app/backend/data"
-OUT_DIR = os.path.join(DATA_DIR, "outputs")
-AUDIO_DIR = os.path.join(DATA_DIR, "audio")
-os.makedirs(OUT_DIR, exist_ok=True)
-os.makedirs(AUDIO_DIR, exist_ok=True)
-
-# API Key
+# AI Keys
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
 
-# Video dimensions (9:16 vertical)
-W, H = 1080, 1920
-FPS = 30
+# Thread Pool for background tasks
+executor = ThreadPoolExecutor(max_workers=4)
 
-# Premium color themes
-THEMES = {
-    "midnight": {
-        "bg_start": (10, 10, 25),
-        "bg_end": (25, 15, 45),
-        "accent": (138, 43, 226),  # Purple
-        "accent2": (255, 105, 180),  # Pink
-        "text": (255, 255, 255),
-        "subtitle_bg": (0, 0, 0, 180),
-    },
-    "ocean": {
-        "bg_start": (5, 20, 35),
-        "bg_end": (10, 40, 60),
-        "accent": (0, 212, 255),  # Cyan
-        "accent2": (50, 255, 150),  # Green
-        "text": (255, 255, 255),
-        "subtitle_bg": (0, 0, 0, 180),
-    },
-    "fire": {
-        "bg_start": (30, 10, 5),
-        "bg_end": (50, 20, 10),
-        "accent": (255, 100, 50),  # Orange
-        "accent2": (255, 200, 50),  # Yellow
-        "text": (255, 255, 255),
-        "subtitle_bg": (0, 0, 0, 180),
-    },
-    "emerald": {
-        "bg_start": (5, 25, 15),
-        "bg_end": (10, 45, 25),
-        "accent": (16, 185, 129),  # Green
-        "accent2": (52, 211, 153),  # Light green
-        "text": (255, 255, 255),
-        "subtitle_bg": (0, 0, 0, 180),
-    },
-}
-
-# In-memory job tracking
-jobs = {}
+# Task Queue (in-memory with MongoDB backup)
+task_queue: Dict[str, Dict] = {}
 
 # ============ MODELS ============
 
-class GenerateAllRequest(BaseModel):
-    prompt: str
+class GenerateRequest(BaseModel):
+    prompt: Optional[str] = None
+    niche: Optional[str] = "general"
 
-# ============ HEALTH ============
+class TaskStatusResponse(BaseModel):
+    task_id: str
+    status: str
+    progress: int
+    step: str
+    result: Optional[Dict] = None
+
+# ============ 2026 VIRAL INTELLIGENCE ============
+
+HOOK_PATTERNS = {
+    "curiosity_gap": {
+        "weight": 1.4,
+        "triggers": ["secret", "truth", "nobody", "hidden", "real reason", "what they"],
+        "template": "The {topic} that {authority} don't want you to know"
+    },
+    "pattern_interrupt": {
+        "weight": 1.35,
+        "triggers": ["stop", "wait", "hold on", "listen", "before you"],
+        "template": "Stop {action} if you want to {benefit}"
+    },
+    "fear_based": {
+        "weight": 1.3,
+        "triggers": ["mistake", "wrong", "danger", "warning", "never", "avoid"],
+        "template": "{number} {topic} mistakes that keep you {negative_state}"
+    },
+    "transformation": {
+        "weight": 1.25,
+        "triggers": ["how i", "went from", "changed", "before after", "finally"],
+        "template": "How I went from {before} to {after} in {timeframe}"
+    },
+    "controversy": {
+        "weight": 1.2,
+        "triggers": ["unpopular", "hot take", "controversial", "nobody agrees"],
+        "template": "Unpopular opinion: {controversial_statement}"
+    },
+    "number_hook": {
+        "weight": 1.15,
+        "triggers": ["3 things", "5 ways", "7 secrets", "10 tips", "reasons"],
+        "template": "{number} {topic} {benefit_word} you need to know"
+    },
+}
+
+TIKTOK_SEO_2026 = [
+    "ai", "chatgpt", "side hustle", "passive income", "productivity", "mental health",
+    "self improvement", "dating", "gym", "crypto", "investing", "mindset", "motivation",
+    "life hack", "cooking", "recipe", "fashion", "skincare", "travel", "storytime",
+    "money", "rich", "success", "routine", "tips", "secrets", "hack", "transform"
+]
+
+# ============ HEALTH CHECK ============
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "version": "3.1-pro", "has_key": bool(EMERGENT_LLM_KEY)}
+    # Check MongoDB connection
+    try:
+        await db.command("ping")
+        db_status = "connected"
+    except:
+        db_status = "disconnected"
+    
+    # Count tasks
+    pending_tasks = sum(1 for t in task_queue.values() if t["status"] == "processing")
+    
+    return {
+        "status": "operational",
+        "version": "3.0-cloud",
+        "architecture": "decentralized",
+        "database": db_status,
+        "ai_ready": bool(EMERGENT_LLM_KEY),
+        "pending_tasks": pending_tasks,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
 
-# ============ AI ENGINE ============
+# ============ TREND ENGINE (EXTERNAL FEEDS) ============
 
-async def ai_generate(prompt: str, system: str = "", max_tokens: int = 2000, retries: int = 3) -> str:
-    """Generate content using AI with retry logic"""
+async def fetch_youtube_rss() -> List[Dict]:
+    """Fetch trends from YouTube RSS feeds"""
+    feeds = [
+        "https://www.youtube.com/feeds/videos.xml?channel_id=UCBcRF18a7Qf58cCRy5xuWwQ",  # Popular
+        "https://www.youtube.com/feeds/videos.xml?channel_id=UC-lHJZR3Gqxm24_Vd_AJ5Yw",  # Trending
+    ]
+    
+    results = []
+    for url in feeds:
+        try:
+            feed = await asyncio.to_thread(feedparser.parse, url)
+            for entry in feed.entries[:8]:
+                results.append({
+                    "id": entry.get("yt_videoid", str(uuid.uuid4())[:8]),
+                    "title": entry.get("title", ""),
+                    "source": "youtube",
+                    "link": entry.get("link", ""),
+                    "published": entry.get("published", ""),
+                })
+        except Exception as e:
+            print(f"[RSS] Error: {e}")
+    
+    return results
+
+def generate_viral_trends() -> List[Dict]:
+    """Generate curated 2026 viral trend patterns"""
+    patterns = [
+        # Curiosity Gap
+        "The Truth About {topic} Nobody Tells You",
+        "What {authority} Don't Want You to Know About {topic}",
+        "I Discovered the Real Reason Why {phenomenon}",
+        # Pattern Interrupt
+        "Stop Doing This If You Want to {benefit}",
+        "Wait - Before You {action}, Watch This",
+        "Hold On - This Changes Everything About {topic}",
+        # Fear Based
+        "{number} Mistakes That Keep You {negative_state} Forever",
+        "Warning: These Habits Are Destroying Your {aspect}",
+        "Why You're Failing at {topic} (And How to Fix It)",
+        # Transformation
+        "How I Went From {before} to {after} in {timeframe}",
+        "My {timeframe} Transformation That Shocked Everyone",
+        "POV: You Finally {positive_outcome}",
+        # Number Hook
+        "3 {topic} Secrets That Actually Work in 2026",
+        "5 Ways to {benefit} Without {common_method}",
+        "7 Signs You're {positive_trait} (Most People Miss #4)",
+    ]
+    
+    topics = ["money", "fitness", "productivity", "relationships", "mindset", "success", "health"]
+    
+    results = []
+    for i, pattern in enumerate(patterns):
+        topic = topics[i % len(topics)]
+        title = pattern.format(
+            topic=topic,
+            authority="experts",
+            phenomenon="most people fail",
+            benefit="get rich",
+            action="invest",
+            number="3",
+            negative_state="broke",
+            aspect="mental health",
+            before="broke",
+            after="$10K/month",
+            timeframe="30 days",
+            positive_outcome="understand wealth",
+            common_method="working harder",
+            positive_trait="smarter than average"
+        )
+        
+        results.append({
+            "id": f"trend_{i}",
+            "title": title,
+            "source": "viral_patterns",
+            "score": 0,  # Will be scored
+        })
+    
+    return results
+
+def analyze_trend_2026(title: str) -> Dict:
+    """2026 Algorithm: Analyze viral potential"""
+    title_lower = title.lower()
+    
+    # Detect hook type
+    detected_hook = "neutral"
+    hook_weight = 1.0
+    
+    for hook_type, config in HOOK_PATTERNS.items():
+        if any(trigger in title_lower for trigger in config["triggers"]):
+            detected_hook = hook_type
+            hook_weight = config["weight"]
+            break
+    
+    # SEO keyword match
+    seo_matches = [kw for kw in TIKTOK_SEO_2026 if kw in title_lower]
+    
+    # Word analysis
+    word_count = len(title.split())
+    has_number = any(c.isdigit() for c in title)
+    has_question = "?" in title
+    
+    # Retention score (0-100)
+    retention = 50
+    if 6 <= word_count <= 14:
+        retention += 15
+    if has_number:
+        retention += 12
+    if has_question:
+        retention += 8
+    if len(seo_matches) > 0:
+        retention += len(seo_matches) * 5
+    
+    return {
+        "hook_type": detected_hook,
+        "hook_weight": hook_weight,
+        "seo_keywords": seo_matches,
+        "retention_score": min(100, retention),
+        "word_count": word_count,
+        "has_number": has_number,
+    }
+
+def score_trend_2026(trend: Dict, analysis: Dict) -> float:
+    """
+    2026 Scoring Algorithm:
+    - Hook Strength: 30%
+    - Retention Pattern: 30%
+    - SEO Demand: 20%
+    - Viral Sentiment: 20%
+    """
+    hook_score = (50 + (analysis["hook_weight"] - 1.0) * 100) * 0.30
+    retention_score = analysis["retention_score"] * 0.30
+    seo_score = min(100, len(analysis["seo_keywords"]) * 20) * 0.20
+    viral_score = 60 * 0.20  # Base viral sentiment
+    
+    if analysis["has_number"]:
+        viral_score += 5
+    
+    return round(min(100, hook_score + retention_score + seo_score + viral_score), 1)
+
+@app.post("/api/trends/fetch")
+async def fetch_trends(background_tasks: BackgroundTasks):
+    """Fetch and analyze trends from external sources"""
+    
+    async def process_trends():
+        try:
+            # Fetch from YouTube RSS
+            yt_trends = await fetch_youtube_rss()
+            
+            # Generate viral patterns
+            viral_patterns = generate_viral_trends()
+            
+            all_trends = yt_trends + viral_patterns
+            
+            # Analyze and score each trend
+            scored_trends = []
+            for trend in all_trends:
+                analysis = analyze_trend_2026(trend["title"])
+                trend["analysis"] = analysis
+                trend["viral_score"] = score_trend_2026(trend, analysis)
+                scored_trends.append(trend)
+            
+            # Sort by score
+            scored_trends.sort(key=lambda x: x["viral_score"], reverse=True)
+            
+            # Store in MongoDB (persistent)
+            await db.trends.delete_many({})
+            if scored_trends:
+                await db.trends.insert_many([
+                    {**t, "_id": t["id"], "fetched_at": datetime.now(timezone.utc).isoformat()}
+                    for t in scored_trends[:50]
+                ])
+            
+            print(f"[TrendEngine] Stored {len(scored_trends)} trends")
+            
+        except Exception as e:
+            print(f"[TrendEngine] Error: {e}")
+    
+    background_tasks.add_task(process_trends)
+    return {"status": "fetching", "message": "Trends being fetched in background"}
+
+@app.get("/api/trends")
+async def get_trends(limit: int = 30):
+    """Get analyzed trends from cloud storage"""
+    try:
+        cursor = db.trends.find({}, {"_id": 0}).sort("viral_score", -1).limit(limit)
+        trends = await cursor.to_list(length=limit)
+        
+        return {
+            "trends": trends,
+            "total": len(trends),
+            "source": "cloud_db",
+        }
+    except Exception as e:
+        return {"trends": [], "error": str(e)}
+
+@app.get("/api/trends/stats")
+async def get_trend_stats():
+    """Get trend statistics"""
+    try:
+        cursor = db.trends.find({}, {"_id": 0})
+        trends = await cursor.to_list(length=100)
+        
+        if not trends:
+            return {"message": "No trends available. Click 'Fetch Trends' first."}
+        
+        # Analyze patterns
+        hook_dist = {}
+        scores = []
+        
+        for t in trends:
+            hook = t.get("analysis", {}).get("hook_type", "neutral")
+            hook_dist[hook] = hook_dist.get(hook, 0) + 1
+            scores.append(t.get("viral_score", 0))
+        
+        avg_score = sum(scores) / len(scores) if scores else 0
+        top_hook = max(hook_dist, key=hook_dist.get) if hook_dist else "neutral"
+        
+        return {
+            "total_trends": len(trends),
+            "avg_score": round(avg_score, 1),
+            "top_hook": top_hook,
+            "hook_distribution": hook_dist,
+            "top_5": [
+                {"title": t["title"], "score": t["viral_score"], "hook": t.get("analysis", {}).get("hook_type")}
+                for t in trends[:5]
+            ]
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+# ============ AI ENGINE (CLOUD) ============
+
+async def ai_generate_with_retry(prompt: str, system: str, max_tokens: int = 2000, retries: int = 3) -> str:
+    """Generate with Gemini AI + retry logic"""
     if not EMERGENT_LLM_KEY:
         raise Exception("AI key not configured")
     
@@ -133,701 +384,482 @@ async def ai_generate(prompt: str, system: str = "", max_tokens: int = 2000, ret
             chat = LlmChat(
                 api_key=EMERGENT_LLM_KEY,
                 session_id=f"vf-{uuid.uuid4()}",
-                system_message=system or "You are a viral content expert."
-            ).with_model("openai", "gpt-4o")
+                system_message=system
+            ).with_model("gemini", "gemini-2.0-flash")
             
             response = await chat.send_message(UserMessage(text=prompt))
             return response
+            
         except Exception as e:
             last_error = e
+            print(f"[AI] Attempt {attempt + 1} failed: {e}")
             if attempt < retries - 1:
-                await asyncio.sleep(1)
+                await asyncio.sleep(2 ** attempt)  # Exponential backoff
     
-    raise last_error
+    raise last_error or Exception("AI generation failed")
 
-def parse_json(raw: str) -> dict:
-    """Parse JSON from AI response with fallback"""
+def parse_json_safe(raw: str) -> Dict:
+    """Safely parse JSON from AI response"""
+    import re
+    
+    # Clean markdown
     clean = re.sub(r"^```(?:json)?\s*", "", raw.strip())
     clean = re.sub(r"\s*```$", "", clean).strip()
+    
     try:
         return json.loads(clean)
     except:
-        m = re.search(r"(\{[\s\S]*\})", clean)
-        if m:
-            return json.loads(m.group(1))
-        raise ValueError("No JSON found in response")
+        # Try to extract JSON object
+        match = re.search(r"(\{[\s\S]*\}|\[[\s\S]*\])", clean)
+        if match:
+            return json.loads(match.group(1))
+        raise ValueError("No valid JSON found")
 
-# ============ TREND INTELLIGENCE ============
+async def generate_10_ideas(niche: str, trends: List[Dict]) -> List[Dict]:
+    """Generate 10 viral ideas using AI"""
+    
+    trend_context = "\n".join([
+        f"- \"{t['title']}\" (Score: {t['viral_score']}, Hook: {t.get('analysis', {}).get('hook_type', 'unknown')})"
+        for t in trends[:8]
+    ])
+    
+    prompt = f"""Generate exactly 10 DIFFERENT viral short-form video ideas for: {niche}
 
-def fetch_trends() -> List[str]:
-    """Quick trend fetch for context"""
-    results = []
-    url = "https://www.youtube.com/feeds/videos.xml?chart=trending&gl=US&hl=en"
-    headers = {"User-Agent": "ViralForge/3.1"}
-    try:
-        req = Request(url, headers=headers)
-        data = urlopen(req, timeout=8).read()
-        root = ET.fromstring(data)
-        ns = {"a": "http://www.w3.org/2005/Atom"}
-        for entry in root.findall("a:entry", ns)[:8]:
-            title = getattr(entry.find("a:title", ns), "text", "") or ""
-            if title:
-                results.append(title)
-    except:
-        pass
-    return results
-
-# ============ PREMIUM VIDEO GENERATION ============
-
-FONT_PATHS = [
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-]
-_font_cache = {}
-
-def get_font(size: int):
-    if size in _font_cache:
-        return _font_cache[size]
-    for p in FONT_PATHS:
-        if os.path.exists(p):
-            try:
-                f = ImageFont.truetype(p, size)
-                _font_cache[size] = f
-                return f
-            except:
-                pass
-    f = ImageFont.load_default()
-    _font_cache[size] = f
-    return f
-
-def create_gradient_background(width: int, height: int, theme: dict, variation: float = 0) -> Image.Image:
-    """Create animated gradient background"""
-    img = Image.new("RGB", (width, height))
-    draw = ImageDraw.Draw(img)
-    
-    start = theme["bg_start"]
-    end = theme["bg_end"]
-    
-    # Add variation for animation effect
-    var = math.sin(variation * math.pi * 2) * 0.1
-    
-    for y in range(height):
-        ratio = y / height + var
-        ratio = max(0, min(1, ratio))
-        r = int(start[0] + (end[0] - start[0]) * ratio)
-        g = int(start[1] + (end[1] - start[1]) * ratio)
-        b = int(start[2] + (end[2] - start[2]) * ratio)
-        draw.line([(0, y), (width, y)], fill=(r, g, b))
-    
-    return img
-
-def add_particle_effects(img: Image.Image, theme: dict, frame_num: int, total_frames: int) -> Image.Image:
-    """Add subtle floating particles for dynamic feel"""
-    draw = ImageDraw.Draw(img, "RGBA")
-    
-    random.seed(42)  # Consistent particles
-    num_particles = 15
-    
-    for i in range(num_particles):
-        # Base position
-        base_x = random.randint(0, W)
-        base_y = random.randint(0, H)
-        
-        # Animate position
-        progress = frame_num / max(total_frames, 1)
-        offset_y = math.sin(progress * math.pi * 2 + i) * 30
-        offset_x = math.cos(progress * math.pi * 2 + i * 0.5) * 20
-        
-        x = int(base_x + offset_x) % W
-        y = int((base_y + offset_y + frame_num * 0.5) % H)
-        
-        # Particle size and alpha
-        size = random.randint(2, 6)
-        alpha = random.randint(30, 80)
-        
-        color = (*theme["accent"][:3], alpha)
-        draw.ellipse([x - size, y - size, x + size, y + size], fill=color)
-    
-    return img
-
-def wrap_text_smart(text: str, max_width: int, font) -> List[str]:
-    """Smart text wrapping"""
-    words = text.split()
-    lines = []
-    current_line = []
-    
-    dummy_img = Image.new("RGB", (1, 1))
-    draw = ImageDraw.Draw(dummy_img)
-    
-    for word in words:
-        test_line = " ".join(current_line + [word])
-        bbox = draw.textbbox((0, 0), test_line, font=font)
-        width = bbox[2] - bbox[0]
-        
-        if width <= max_width:
-            current_line.append(word)
-        else:
-            if current_line:
-                lines.append(" ".join(current_line))
-            current_line = [word]
-    
-    if current_line:
-        lines.append(" ".join(current_line))
-    
-    return lines[:4]  # Max 4 lines
-
-def draw_tiktok_subtitle(img: Image.Image, text: str, theme: dict, 
-                         progress: float = 1.0, emphasis_words: List[str] = None) -> Image.Image:
-    """Draw TikTok-style animated subtitle with word emphasis"""
-    draw = ImageDraw.Draw(img, "RGBA")
-    
-    # Font sizes
-    font_size = 72
-    font = get_font(font_size)
-    
-    # Wrap text
-    max_width = W - 120
-    lines = wrap_text_smart(text.upper(), max_width, font)
-    
-    # Calculate total height
-    line_height = font_size + 20
-    total_height = len(lines) * line_height
-    
-    # Position (lower third of screen)
-    start_y = int(H * 0.68) - total_height // 2
-    
-    # Draw each line
-    for i, line in enumerate(lines):
-        bbox = draw.textbbox((0, 0), line, font=font)
-        text_width = bbox[2] - bbox[0]
-        x = (W - text_width) // 2
-        y = start_y + i * line_height
-        
-        # Animate entrance
-        line_progress = min(1.0, progress * len(lines) - i)
-        if line_progress <= 0:
-            continue
-        
-        # Scale effect
-        scale = 0.8 + 0.2 * min(1.0, line_progress)
-        alpha = int(255 * min(1.0, line_progress))
-        
-        # Background pill
-        padding_x, padding_y = 30, 12
-        bg_rect = [
-            x - padding_x,
-            y - padding_y,
-            x + text_width + padding_x,
-            y + font_size + padding_y
-        ]
-        
-        # Rounded rectangle background
-        draw.rounded_rectangle(bg_rect, radius=20, fill=(0, 0, 0, min(200, alpha)))
-        
-        # Draw text with glow effect
-        glow_color = (*theme["accent"], 60)
-        for offset in [(2, 2), (-2, -2), (2, -2), (-2, 2)]:
-            draw.text((x + offset[0], y + offset[1]), line, font=font, fill=glow_color)
-        
-        # Main text - highlight emphasis words
-        if emphasis_words:
-            # Draw word by word for emphasis
-            words = line.split()
-            word_x = x
-            for word in words:
-                word_bbox = draw.textbbox((0, 0), word + " ", font=font)
-                word_width = word_bbox[2] - word_bbox[0]
-                
-                # Check if this word should be emphasized
-                is_emphasis = any(ew.upper() in word.upper() for ew in (emphasis_words or []))
-                
-                if is_emphasis:
-                    # Draw with accent color
-                    draw.text((word_x, y), word, font=font, fill=theme["accent2"])
-                else:
-                    draw.text((word_x, y), word, font=font, fill=(255, 255, 255, alpha))
-                
-                word_x += word_width
-        else:
-            draw.text((x, y), line, font=font, fill=(255, 255, 255, alpha))
-    
-    return img
-
-def draw_hook_frame(img: Image.Image, text: str, theme: dict, progress: float) -> Image.Image:
-    """Special hook frame with maximum impact"""
-    draw = ImageDraw.Draw(img, "RGBA")
-    
-    # Large impactful text
-    font_size = 110
-    font = get_font(font_size)
-    
-    # Wrap text
-    max_width = W - 100
-    lines = wrap_text_smart(text.upper(), max_width, font)
-    
-    line_height = font_size + 25
-    total_height = len(lines) * line_height
-    start_y = (H - total_height) // 2 - 50
-    
-    # Pulsing background effect
-    pulse = 0.9 + 0.1 * math.sin(progress * math.pi * 4)
-    
-    for i, line in enumerate(lines):
-        bbox = draw.textbbox((0, 0), line, font=font)
-        text_width = bbox[2] - bbox[0]
-        x = (W - text_width) // 2
-        y = start_y + i * line_height
-        
-        # Glow effect
-        glow_size = int(8 * pulse)
-        for g in range(glow_size, 0, -2):
-            glow_alpha = int(40 * (1 - g / glow_size))
-            glow_color = (*theme["accent"], glow_alpha)
-            draw.text((x, y), line, font=font, fill=glow_color,
-                     stroke_width=g, stroke_fill=glow_color)
-        
-        # Main text with accent color
-        draw.text((x, y), line, font=font, fill=theme["accent"],
-                 stroke_width=3, stroke_fill=(0, 0, 0))
-    
-    # Add "WATCH THIS" or similar hook indicator
-    small_font = get_font(32)
-    indicator = "👇 WATCH THIS"
-    ind_bbox = draw.textbbox((0, 0), indicator, font=small_font)
-    ind_x = (W - (ind_bbox[2] - ind_bbox[0])) // 2
-    ind_y = start_y + total_height + 60
-    
-    draw.rounded_rectangle(
-        [ind_x - 20, ind_y - 10, ind_x + (ind_bbox[2] - ind_bbox[0]) + 20, ind_y + 40],
-        radius=25, fill=theme["accent"]
-    )
-    draw.text((ind_x, ind_y), indicator, font=small_font, fill=(255, 255, 255))
-    
-    return img
-
-def draw_progress_indicator(img: Image.Image, current: int, total: int, theme: dict) -> Image.Image:
-    """Draw scene progress indicator"""
-    draw = ImageDraw.Draw(img, "RGBA")
-    
-    # Progress bar at bottom
-    bar_height = 6
-    bar_y = H - 20
-    
-    # Background
-    draw.rectangle([0, bar_y, W, bar_y + bar_height], fill=(255, 255, 255, 40))
-    
-    # Progress
-    progress_width = int(W * current / max(total, 1))
-    draw.rectangle([0, bar_y, progress_width, bar_y + bar_height], fill=theme["accent"])
-    
-    return img
-
-def get_ffmpeg() -> str:
-    r = subprocess.run(["which", "ffmpeg"], capture_output=True)
-    if r.returncode == 0:
-        return r.stdout.decode().strip()
-    try:
-        import imageio_ffmpeg
-        return imageio_ffmpeg.get_ffmpeg_exe()
-    except:
-        return "ffmpeg"
-
-async def generate_tts(text: str, video_id: str) -> Optional[str]:
-    """Generate high-quality TTS"""
-    if not EMERGENT_LLM_KEY:
-        return None
-    try:
-        tts = OpenAITextToSpeech(api_key=EMERGENT_LLM_KEY)
-        audio_bytes = await tts.generate_speech(
-            text=text,
-            model="tts-1-hd",  # HD quality
-            voice="nova",  # Energetic voice
-            speed=1.05  # Slightly faster for engagement
-        )
-        audio_path = os.path.join(AUDIO_DIR, f"voice_{video_id}.mp3")
-        with open(audio_path, "wb") as f:
-            f.write(audio_bytes)
-        return audio_path
-    except Exception as e:
-        print(f"[TTS] Error: {e}")
-        return None
-
-async def build_premium_video(script: dict, video_id: str, update_progress) -> Optional[str]:
-    """Build premium quality video with TikTok-style captions"""
-    if not PIL_OK:
-        return None
-    
-    scenes = script.get("scenes", [])
-    if not scenes:
-        return None
-    
-    # Select random theme
-    theme_name = random.choice(list(THEMES.keys()))
-    theme = THEMES[theme_name]
-    
-    ff = get_ffmpeg()
-    tmp = tempfile.mkdtemp(prefix="vf_pro_")
-    
-    try:
-        all_frames = []
-        total_scenes = len(scenes)
-        
-        # Calculate total frames
-        total_duration = sum(s.get("duration", 3) for s in scenes)
-        
-        frame_count = 0
-        for si, scene in enumerate(scenes):
-            await update_progress(
-                55 + int((si / total_scenes) * 30),
-                f"Rendering scene {si+1}/{total_scenes}"
-            )
-            
-            caption = scene.get("caption_text") or scene.get("spoken_text", "")
-            duration = scene.get("duration", 3)
-            phase = scene.get("phase", "body")
-            emphasis = scene.get("emphasis_words", [])
-            
-            n_frames = int(duration * FPS)
-            
-            for fi in range(n_frames):
-                # Progress within scene
-                scene_progress = fi / max(n_frames - 1, 1)
-                global_progress = frame_count / (total_duration * FPS)
-                
-                # Create base frame with gradient
-                frame = create_gradient_background(W, H, theme, global_progress)
-                
-                # Add particle effects
-                frame = add_particle_effects(frame, theme, frame_count, int(total_duration * FPS))
-                
-                # Draw content based on phase
-                if phase == "hook":
-                    frame = draw_hook_frame(frame, caption, theme, scene_progress)
-                else:
-                    # Subtitle animation
-                    text_progress = min(1.0, scene_progress * 3)  # Quick entrance
-                    frame = draw_tiktok_subtitle(frame, caption, theme, text_progress, emphasis)
-                
-                # Progress indicator
-                frame = draw_progress_indicator(frame, si + 1, total_scenes, theme)
-                
-                all_frames.append(frame)
-                frame_count += 1
-        
-        await update_progress(85, "Saving frames...")
-        
-        # Save frames
-        frame_paths = []
-        for fi, frame in enumerate(all_frames):
-            p = os.path.join(tmp, f"f{fi:07d}.jpg")
-            frame.save(p, "JPEG", quality=92)
-            frame_paths.append(p)
-        
-        await update_progress(88, "Generating AI voice...")
-        
-        # Generate TTS
-        full_text = " ".join(s.get("spoken_text", "") for s in scenes)
-        audio_path = await generate_tts(full_text, video_id)
-        
-        await update_progress(92, "Encoding video...")
-        
-        # Create frame list
-        lst = os.path.join(tmp, "frames.txt")
-        with open(lst, "w") as fh:
-            for fp in frame_paths:
-                fh.write(f"file '{fp}'\nduration {1/FPS:.6f}\n")
-            if frame_paths:
-                fh.write(f"file '{frame_paths[-1]}'\n")
-        
-        out_path = os.path.join(OUT_DIR, f"viral_{video_id}.mp4")
-        
-        # FFmpeg encoding with high quality
-        if audio_path and os.path.exists(audio_path):
-            cmd = [
-                ff, "-y",
-                "-f", "concat", "-safe", "0", "-i", lst,
-                "-i", audio_path,
-                "-vf", "scale=1080:1920,setsar=1",
-                "-c:v", "libx264", "-preset", "medium", "-crf", "20",
-                "-c:a", "aac", "-b:a", "192k",
-                "-shortest",
-                "-r", str(FPS), "-pix_fmt", "yuv420p",
-                "-movflags", "+faststart",
-                out_path
-            ]
-        else:
-            cmd = [
-                ff, "-y",
-                "-f", "concat", "-safe", "0", "-i", lst,
-                "-vf", "scale=1080:1920,setsar=1",
-                "-c:v", "libx264", "-preset", "medium", "-crf", "20",
-                "-r", str(FPS), "-pix_fmt", "yuv420p",
-                "-movflags", "+faststart",
-                out_path
-            ]
-        
-        result = subprocess.run(cmd, capture_output=True, timeout=300)
-        if result.returncode != 0:
-            print(f"[FFmpeg] Error: {result.stderr.decode()[:500]}")
-            return None
-        
-        return out_path
-    
-    except Exception as e:
-        print(f"[build_video] {e}")
-        return None
-    finally:
-        shutil.rmtree(tmp, ignore_errors=True)
-
-# ============ MAIN ENDPOINT ============
-
-@app.post("/api/generate-all")
-async def generate_all(req: GenerateAllRequest, background_tasks: BackgroundTasks):
-    """
-    Premium viral video generation pipeline
-    """
-    if not req.prompt or len(req.prompt.strip()) < 3:
-        raise HTTPException(status_code=400, detail="Please enter a valid prompt")
-    
-    job_id = str(uuid.uuid4())[:12]
-    jobs[job_id] = {
-        "status": "processing",
-        "progress": 0,
-        "step": "Starting...",
-        "result": None
-    }
-    
-    async def process():
-        try:
-            async def update_progress(pct: int, step: str):
-                jobs[job_id]["progress"] = pct
-                jobs[job_id]["step"] = step
-            
-            await update_progress(5, "Analyzing your request...")
-            
-            # Step 1: Fetch trends for context
-            await update_progress(8, "Fetching viral trends...")
-            trends = fetch_trends()
-            trend_context = "\n".join(f"- {t}" for t in trends[:5]) if trends else "General viral trends"
-            
-            # Step 2: Generate optimized viral idea with strong hook
-            await update_progress(15, "Creating viral idea...")
-            
-            idea_prompt = f"""You are the world's best viral content strategist. Based on this request:
-
-"{req.prompt}"
-
-Current trending topics for context:
+CURRENT VIRAL PATTERNS (2026):
 {trend_context}
 
-Generate ONE perfect viral video concept optimized for TikTok/Shorts.
+REQUIREMENTS:
+- Each idea must use a DIFFERENT hook type
+- Hooks must stop the scroll in 1.5 seconds
+- Optimize for TikTok/YouTube Shorts retention
+- Include SEO keywords: {', '.join(TIKTOK_SEO_2026[:8])}
 
-CRITICAL: The HOOK must be incredibly strong - it has 1.5 seconds to stop the scroll.
+OUTPUT JSON array only:
+[
+  {{
+    "id": 1,
+    "title": "Viral title (8-14 words)",
+    "hook": "Exact first 3 seconds script",
+    "hook_type": "curiosity_gap|pattern_interrupt|fear_based|transformation|controversy|number_hook",
+    "concept": "2-sentence concept",
+    "emotion": "primary emotion"
+  }}
+]"""
 
-Hook techniques that work:
-- Pattern interrupt ("Stop scrolling if...")
-- Controversial take ("Nobody talks about this...")
-- Curiosity gap ("The real reason why...")
-- Fear/urgency ("You're making this mistake...")
-- Transformation ("How I went from X to Y...")
+    system = "You are the world's top viral content strategist. Output ONLY valid JSON array."
+    
+    raw = await ai_generate_with_retry(prompt, system, 2500)
+    ideas = parse_json_safe(raw)
+    
+    return ideas[:10] if isinstance(ideas, list) else []
 
-OUTPUT JSON only:
-{{
-  "niche": "detected niche",
-  "title": "Scroll-stopping title (8-12 words, power words)",
-  "idea": "2-sentence video concept",
-  "hook": "EXACT opening words - must create instant curiosity in 1.5 seconds",
-  "hook_type": "pattern_interrupt|curiosity_gap|fear|transformation|controversy",
-  "emotion": "primary emotion triggered",
-  "why_viral": "1 sentence on the psychological trigger",
-  "emphasis_words": ["key", "words", "to", "highlight"]
-}}"""
-            
-            idea_raw = await ai_generate(idea_prompt, 
-                "You create viral concepts that get millions of views. Output ONLY valid JSON.", 1000)
-            idea_data = parse_json(idea_raw)
-            
-            # Step 3: Generate premium script
-            await update_progress(30, "Writing viral script...")
-            
-            script_prompt = f"""Create a PREMIUM viral video script. This must be SHORT, PUNCHY, and ADDICTIVE.
+async def score_ideas_with_ai(ideas: List[Dict], niche: str) -> List[Dict]:
+    """Score ideas using 2026 algorithm"""
+    
+    ideas_text = "\n".join([
+        f"IDEA {i['id']}: \"{i['title']}\"\nHook: \"{i['hook']}\""
+        for i in ideas
+    ])
+    
+    prompt = f"""Score these {len(ideas)} video ideas for {niche}.
 
-CONCEPT:
-- Title: {idea_data.get('title', '')}
-- Hook: {idea_data.get('hook', '')}
-- Idea: {idea_data.get('idea', '')}
-- Emotion: {idea_data.get('emotion', 'curiosity')}
+{ideas_text}
 
-RULES FOR VIRAL SCRIPTS:
-1. HOOK (0-3s): Pattern interrupt, stop the scroll IMMEDIATELY
-2. TENSION (3-15s): Build curiosity, create "I need to know" feeling
-3. PAYOFF (15-30s): Deliver value, create "aha" moment
-4. LOOP (last 2s): End that makes viewers rewatch
+SCORING (0-100 each):
+- hook_strength: Scroll-stopping power
+- retention: Watch-through likelihood
+- viral_potential: Share/save likelihood
+- seo_demand: 2026 search relevance
 
-WRITING STYLE:
-- Short sentences. Punchy. Direct.
-- Conversational, not robotic
-- Each word must EARN its place
-- Create rhythm and flow
+Be harsh and differentiate. Output JSON array:
+[{{"id": 1, "hook_strength": 85, "retention": 70, "viral_potential": 80, "seo_demand": 75}}]"""
+
+    system = "Score with precision. Output ONLY JSON array."
+    
+    raw = await ai_generate_with_retry(prompt, system, 1200)
+    scores = parse_json_safe(raw)
+    
+    # Calculate final scores
+    scored = []
+    for idea, score_data in zip(ideas, scores if isinstance(scores, list) else [{}] * len(ideas)):
+        if not isinstance(score_data, dict):
+            score_data = {}
+        
+        final_score = (
+            score_data.get("hook_strength", 50) * 0.30 +
+            score_data.get("retention", 50) * 0.30 +
+            score_data.get("viral_potential", 50) * 0.20 +
+            score_data.get("seo_demand", 50) * 0.20
+        )
+        
+        scored.append({
+            **idea,
+            "scores": score_data,
+            "final_score": round(final_score, 1)
+        })
+    
+    scored.sort(key=lambda x: x["final_score"], reverse=True)
+    return scored
+
+async def generate_script(idea: Dict, niche: str) -> Dict:
+    """Generate full production script"""
+    
+    prompt = f"""Create a viral TikTok/Shorts script for:
+
+IDEA: {idea['title']}
+HOOK: {idea['hook']}
+CONCEPT: {idea.get('concept', '')}
+
+STRUCTURE (30-40 seconds total):
+1. HOOK (0-3s): Pattern interrupt - stop the scroll
+2. TENSION (3-12s): Build curiosity
+3. VALUE (12-28s): Deliver the promise
+4. CTA (28-32s): Call to action + loop trigger
 
 OUTPUT JSON:
 {{
-  "title": "final optimized title",
-  "hook": "exact hook line",
-  "total_duration": 30,
+  "title": "Final title",
+  "hook": "Opening hook",
+  "duration": 32,
   "scenes": [
     {{
       "id": 1,
       "phase": "hook",
-      "duration": 3,
-      "spoken_text": "Natural spoken words",
-      "caption_text": "SHORT ON-SCREEN TEXT",
-      "emphasis_words": ["KEY", "WORDS"]
-    }},
-    {{
-      "id": 2,
-      "phase": "build",
-      "duration": 8,
-      "spoken_text": "...",
-      "caption_text": "...",
-      "emphasis_words": []
-    }},
-    {{
-      "id": 3,
-      "phase": "payoff",
-      "duration": 12,
-      "spoken_text": "...",
-      "caption_text": "...",
-      "emphasis_words": []
-    }},
-    {{
-      "id": 4,
-      "phase": "loop",
-      "duration": 4,
-      "spoken_text": "...",
-      "caption_text": "...",
-      "emphasis_words": []
+      "start": 0,
+      "end": 3,
+      "spoken": "What narrator says",
+      "caption": "ON-SCREEN TEXT",
+      "visual": "Visual description"
     }}
   ],
-  "hashtags": ["#viral", "#fyp", "#niche"],
-  "caption": "Video caption for posting"
-}}
+  "hashtags": ["#fyp", "#viral"],
+  "description": "Video description for SEO"
+}}"""
 
-Keep total duration 25-35 seconds. 4-5 scenes max."""
+    system = "Write viral scripts. Output ONLY valid JSON."
+    
+    raw = await ai_generate_with_retry(prompt, system, 2000)
+    return parse_json_safe(raw)
+
+# ============ VOICE GENERATION (CLOUD) ============
+
+async def generate_voice_cloud(text: str, task_id: str) -> Optional[str]:
+    """Generate voice using OpenAI TTS (Cloud API)"""
+    if not EMERGENT_LLM_KEY:
+        return None
+    
+    try:
+        tts = OpenAITextToSpeech(api_key=EMERGENT_LLM_KEY)
+        audio_bytes = await tts.generate_speech(
+            text=text,
+            model="tts-1",
+            voice="nova",
+            speed=1.05
+        )
+        
+        # Store in MongoDB as base64 (cloud persistent)
+        audio_b64 = base64.b64encode(audio_bytes).decode('utf-8')
+        
+        await db.audio.update_one(
+            {"task_id": task_id},
+            {"$set": {"audio_b64": audio_b64, "created_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True
+        )
+        
+        return task_id
+        
+    except Exception as e:
+        print(f"[TTS] Error: {e}")
+        return None
+
+# ============ VIDEO METADATA (CLOUD STORAGE) ============
+
+async def create_video_package(task_id: str, script: Dict, idea: Dict) -> Dict:
+    """Create video metadata package (stored in cloud)"""
+    
+    # Since we're cloud-based, we store the "video instructions" 
+    # that can be rendered by any video service
+    
+    video_package = {
+        "task_id": task_id,
+        "status": "ready",
+        "title": script.get("title", idea.get("title", "")),
+        "hook": script.get("hook", idea.get("hook", "")),
+        "duration": script.get("duration", 30),
+        "scenes": script.get("scenes", []),
+        "hashtags": script.get("hashtags", []),
+        "description": script.get("description", ""),
+        "seo_metadata": {
+            "title": script.get("title", ""),
+            "tags": script.get("hashtags", []),
+            "description": script.get("description", ""),
+        },
+        "render_instructions": {
+            "resolution": "1080x1920",
+            "fps": 30,
+            "format": "mp4",
+            "style": "tiktok_caption",
+        },
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    
+    # Store in MongoDB
+    await db.videos.update_one(
+        {"task_id": task_id},
+        {"$set": video_package},
+        upsert=True
+    )
+    
+    return video_package
+
+# ============ TASK QUEUE SYSTEM ============
+
+def update_task(task_id: str, status: str, progress: int, step: str, result: Dict = None):
+    """Update task status"""
+    task_queue[task_id] = {
+        "task_id": task_id,
+        "status": status,
+        "progress": progress,
+        "step": step,
+        "result": result,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+async def save_task_to_cloud(task_id: str, data: Dict):
+    """Persist task to MongoDB"""
+    await db.tasks.update_one(
+        {"task_id": task_id},
+        {"$set": {**data, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+
+# ============ MAIN GENERATION ENDPOINT ============
+
+@app.post("/api/generate")
+async def generate(req: GenerateRequest, background_tasks: BackgroundTasks):
+    """
+    Main generation endpoint - Returns immediately with task_id
+    Heavy processing happens in background via cloud APIs
+    """
+    task_id = str(uuid.uuid4())[:12]
+    niche = req.prompt or req.niche or "viral trending content"
+    
+    # Initialize task (immediate response < 1s)
+    update_task(task_id, "processing", 0, "Initializing...")
+    
+    async def process_generation():
+        """Background worker - all processing via cloud APIs"""
+        try:
+            # Step 1: Load trends from cloud DB
+            update_task(task_id, "processing", 5, "Loading trend intelligence...")
+            await save_task_to_cloud(task_id, {"step": "loading_trends"})
             
-            script_raw = await ai_generate(script_prompt,
-                "You write viral scripts that keep viewers hooked. Output ONLY valid JSON.", 1800)
-            script_data = parse_json(script_raw)
+            cursor = db.trends.find({}, {"_id": 0}).sort("viral_score", -1).limit(15)
+            trends = await cursor.to_list(length=15)
             
-            # Step 4: Build premium video
-            await update_progress(50, "Building video...")
+            if not trends:
+                # Generate fallback trends
+                trends = generate_viral_trends()
+                for t in trends:
+                    analysis = analyze_trend_2026(t["title"])
+                    t["analysis"] = analysis
+                    t["viral_score"] = score_trend_2026(t, analysis)
+                trends.sort(key=lambda x: x["viral_score"], reverse=True)
             
-            video_path = await build_premium_video(script_data, job_id, update_progress)
+            # Step 2: Generate 10 ideas via AI
+            update_task(task_id, "processing", 15, "Generating 10 viral ideas...")
+            await save_task_to_cloud(task_id, {"step": "generating_ideas"})
             
-            await update_progress(96, "Finalizing...")
+            ideas = await generate_10_ideas(niche, trends)
             
-            # Prepare result
-            video_url = f"/api/video/{job_id}" if video_path and os.path.exists(video_path) else None
+            # Step 3: Score ideas
+            update_task(task_id, "processing", 35, "Scoring with 2026 algorithm...")
+            await save_task_to_cloud(task_id, {"step": "scoring_ideas"})
+            
+            scored_ideas = await score_ideas_with_ai(ideas, niche)
+            
+            # Step 4: Auto-select winner
+            update_task(task_id, "processing", 45, "Selecting best idea...")
+            winner = scored_ideas[0] if scored_ideas else None
+            
+            if not winner:
+                raise Exception("No ideas generated")
+            
+            # Step 5: Generate script
+            update_task(task_id, "processing", 55, "Writing viral script...")
+            await save_task_to_cloud(task_id, {"step": "writing_script"})
+            
+            script = await generate_script(winner, niche)
+            
+            # Step 6: Generate voice
+            update_task(task_id, "processing", 70, "Generating AI voice...")
+            await save_task_to_cloud(task_id, {"step": "generating_voice"})
+            
+            full_text = " ".join(s.get("spoken", "") for s in script.get("scenes", []))
+            voice_id = await generate_voice_cloud(full_text, task_id)
+            
+            # Step 7: Create video package
+            update_task(task_id, "processing", 85, "Creating video package...")
+            await save_task_to_cloud(task_id, {"step": "creating_package"})
+            
+            video_package = await create_video_package(task_id, script, winner)
+            
+            # Step 8: Finalize
+            update_task(task_id, "processing", 95, "Finalizing...")
             
             result = {
                 "success": True,
-                "idea": {
-                    "niche": idea_data.get("niche", "general"),
-                    "title": idea_data.get("title", script_data.get("title", "")),
-                    "concept": idea_data.get("idea", ""),
-                    "hook": idea_data.get("hook", script_data.get("hook", "")),
-                    "hook_type": idea_data.get("hook_type", "curiosity_gap"),
-                    "emotion": idea_data.get("emotion", "curiosity"),
-                    "why_viral": idea_data.get("why_viral", ""),
+                "task_id": task_id,
+                "niche": niche,
+                "all_ideas": scored_ideas,
+                "winner": {
+                    "title": winner.get("title", ""),
+                    "hook": winner.get("hook", ""),
+                    "concept": winner.get("concept", ""),
+                    "hook_type": winner.get("hook_type", ""),
+                    "final_score": winner.get("final_score", 0),
+                    "scores": winner.get("scores", {}),
                 },
-                "script": {
-                    "title": script_data.get("title", ""),
-                    "hook": script_data.get("hook", ""),
-                    "duration": script_data.get("total_duration", 30),
-                    "scenes": script_data.get("scenes", []),
-                    "hashtags": script_data.get("hashtags", []),
-                    "caption": script_data.get("caption", ""),
-                },
+                "script": script,
                 "video": {
-                    "id": job_id,
-                    "url": video_url,
-                    "ready": video_url is not None,
+                    "task_id": task_id,
+                    "status": "ready",
+                    "has_voice": voice_id is not None,
+                },
+                "metadata": {
+                    "title": script.get("title", ""),
+                    "hashtags": script.get("hashtags", []),
+                    "description": script.get("description", ""),
+                    "duration": script.get("duration", 30),
                 }
             }
             
-            # Save to MongoDB for learning
+            # Save complete result to cloud
             await db.generations.insert_one({
-                "job_id": job_id,
-                "prompt": req.prompt,
-                "idea": result["idea"],
-                "script": result["script"],
-                "video_ready": result["video"]["ready"],
+                "task_id": task_id,
+                "prompt": niche,
+                "winner": result["winner"],
+                "script": script,
+                "all_ideas": [{"title": i["title"], "score": i["final_score"]} for i in scored_ideas],
                 "created_at": datetime.now(timezone.utc).isoformat(),
             })
             
-            jobs[job_id] = {
-                "status": "complete",
-                "progress": 100,
-                "step": "Done!",
-                "result": result
-            }
+            update_task(task_id, "complete", 100, "Complete!", result)
+            await save_task_to_cloud(task_id, {"status": "complete", "result": result})
             
         except Exception as e:
-            print(f"[generate_all] Error: {e}")
+            print(f"[Generation] Error: {e}")
             import traceback
             traceback.print_exc()
-            jobs[job_id] = {
-                "status": "error",
-                "progress": 0,
-                "step": f"Error: {str(e)[:100]}",
-                "result": None
-            }
+            update_task(task_id, "error", 0, f"Error: {str(e)[:100]}")
+            await save_task_to_cloud(task_id, {"status": "error", "error": str(e)})
     
-    background_tasks.add_task(process)
-    return {"job_id": job_id, "status": "processing"}
+    # Run in background
+    background_tasks.add_task(process_generation)
+    
+    # Return immediately with task_id
+    return {"task_id": task_id, "status": "processing", "message": "Generation started"}
 
-@app.get("/api/job/{job_id}")
-async def get_job_status(job_id: str):
-    """Check job status"""
-    if job_id not in jobs:
-        # Check MongoDB
-        doc = await db.generations.find_one({"job_id": job_id}, {"_id": 0})
-        if doc:
-            return {
-                "status": "complete",
-                "progress": 100,
-                "step": "Done!",
-                "result": {
-                    "success": True,
-                    "idea": doc.get("idea"),
-                    "script": doc.get("script"),
-                    "video": {
-                        "id": job_id,
-                        "url": f"/api/video/{job_id}",
-                        "ready": doc.get("video_ready", False)
-                    }
+@app.get("/api/task/{task_id}")
+async def get_task_status(task_id: str):
+    """Poll endpoint for task status"""
+    # Check in-memory first
+    if task_id in task_queue:
+        return task_queue[task_id]
+    
+    # Check cloud DB
+    task = await db.tasks.find_one({"task_id": task_id}, {"_id": 0})
+    if task:
+        return task
+    
+    # Check generations
+    gen = await db.generations.find_one({"task_id": task_id}, {"_id": 0})
+    if gen:
+        return {
+            "task_id": task_id,
+            "status": "complete",
+            "progress": 100,
+            "step": "Complete!",
+            "result": {
+                "success": True,
+                "task_id": task_id,
+                "winner": gen.get("winner"),
+                "script": gen.get("script"),
+                "metadata": {
+                    "title": gen.get("script", {}).get("title", ""),
+                    "hashtags": gen.get("script", {}).get("hashtags", []),
                 }
             }
-        raise HTTPException(status_code=404, detail="Job not found")
-    return jobs[job_id]
+        }
+    
+    raise HTTPException(status_code=404, detail="Task not found")
 
-@app.get("/api/video/{video_id}")
-async def get_video(video_id: str):
-    """Download video"""
-    path = os.path.join(OUT_DIR, f"viral_{video_id}.mp4")
-    if not os.path.exists(path):
+# ============ VIDEO VAULT (CLOUD STORAGE) ============
+
+@app.get("/api/vault")
+async def get_video_vault():
+    """Get all generated videos from cloud storage"""
+    try:
+        cursor = db.generations.find({}, {"_id": 0}).sort("created_at", -1).limit(20)
+        videos = await cursor.to_list(length=20)
+        
+        return {
+            "videos": [
+                {
+                    "task_id": v.get("task_id"),
+                    "title": v.get("winner", {}).get("title", "Untitled"),
+                    "hook": v.get("winner", {}).get("hook", ""),
+                    "score": v.get("winner", {}).get("final_score", 0),
+                    "duration": v.get("script", {}).get("duration", 30),
+                    "hashtags": v.get("script", {}).get("hashtags", []),
+                    "created_at": v.get("created_at"),
+                }
+                for v in videos
+            ],
+            "total": len(videos),
+        }
+    except Exception as e:
+        return {"videos": [], "error": str(e)}
+
+@app.get("/api/video/{task_id}")
+async def get_video_details(task_id: str):
+    """Get video details and script"""
+    video = await db.videos.find_one({"task_id": task_id}, {"_id": 0})
+    gen = await db.generations.find_one({"task_id": task_id}, {"_id": 0})
+    
+    if not video and not gen:
         raise HTTPException(status_code=404, detail="Video not found")
-    return FileResponse(path, media_type="video/mp4", filename=f"viral_{video_id}.mp4")
+    
+    return {
+        "task_id": task_id,
+        "video": video,
+        "generation": gen,
+    }
 
-@app.get("/api/history")
-async def get_history():
-    """Get generation history"""
-    cursor = db.generations.find({}, {"_id": 0}).sort("created_at", -1).limit(20)
-    items = await cursor.to_list(length=20)
-    return {"history": items}
+@app.get("/api/audio/{task_id}")
+async def get_audio(task_id: str):
+    """Get generated audio"""
+    audio = await db.audio.find_one({"task_id": task_id}, {"_id": 0})
+    if not audio:
+        raise HTTPException(status_code=404, detail="Audio not found")
+    
+    # Return base64 audio
+    return {"task_id": task_id, "audio_b64": audio.get("audio_b64")}
 
 # ============ STARTUP ============
 
 @app.on_event("startup")
 async def startup():
-    print("✓ ViralForge v3.1 Pro — Production Ready")
+    # Create indexes for performance
+    try:
+        await db.trends.create_index("viral_score")
+        await db.generations.create_index("created_at")
+        await db.tasks.create_index("task_id")
+    except:
+        pass
+    
+    print("=" * 60)
+    print("  ViralForge v3 — The Independent Factory")
+    print("  Architecture: Decentralized Cloud Processing")
+    print("  Status: Operational")
+    print("=" * 60)
