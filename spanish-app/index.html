@@ -176,6 +176,21 @@ h3.sec { font-size: 15px; font-weight: 600; color: var(--muted); margin-bottom: 
 .steps ol { margin: 0; padding-inline-start: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
 .toast { position: fixed; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); max-width: 560px; margin-inline: auto; background: var(--ink); color: var(--bg); border-radius: 14px; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; justify-content: space-between; direction: rtl; z-index: 10; font-size: 14.5px; }
 .toast .linkish { color: var(--sun); font-weight: 600; }
+.row.read .num { color: var(--sun); display: grid; place-items: center; }
+.seg.two { grid-template-columns: 1fr 1fr; }
+.rctl { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2; background: var(--bg); padding-block: 10px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+.rctl .linkish { align-self: flex-start; }
+.btn.stop { background: var(--bad); color: #fff; }
+.turn-msg { margin: 0; font-weight: 600; color: var(--good); }
+.reading { display: flex; flex-direction: column; gap: 4px; }
+.sent { margin: 0; padding: 8px 12px; border-radius: 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; border: 1.5px solid transparent; transition: background .2s; }
+.sent .es { font-size: 19px; line-height: 1.6; text-align: left; }
+.sent:hover { background: var(--surface); }
+.sent.on { background: var(--accent-soft); border-color: var(--accent); }
+.sent.turn { background: var(--good-soft); border-color: var(--good); }
+.rqs { display: flex; flex-direction: column; gap: 18px; }
+.rq { display: flex; flex-direction: column; gap: 10px; }
+.rq .prompt { font-size: 19px; }
 /* practice */
 .pic { font-size: 88px; line-height: 1.15; text-align: center; margin: 4px 0 20px; }
 .pic.num { font-family: var(--display); font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
@@ -612,6 +627,43 @@ const ASK = {
   "c1-3": [["Escribe el saludo de una carta formal.","كتب البداية ديال برية رسمية","Estimado señor García:"],["¿Cómo terminas un correo formal?","كيفاش كتسالي إيميل رسمي؟","Le saluda atentamente, Ahmed."]]
 };
 
+/* ============ نصوص للقراءة: sentences [الجملة, الترجمة], questions [السؤال, الجواب, [الغلطين]] ============ */
+const TEXTS = [
+  { id: "r-a1-1", level: "A1", es: "Me presento", ar: "كنقدم راسي",
+    sentences: [["Hola, me llamo Youssef.","سلام، سميتي يوسف."],["Tengo veinticinco años y soy de Marruecos.","عندي 25 عام وأنا من المغرب."],["Vivo en Tánger con mi familia.","ساكن فطنجة مع العائلة ديالي."],["Soy ingeniero y trabajo en una empresa grande.","أنا مهندس وكنخدم فشركة كبيرة."],["Hablo árabe, francés y un poco de español.","كنهضر العربية، الفرنسية وشوية ديال الإسبانية."],["Estudio español todos los días.","كنقرا الإسبانية كل نهار."],["Me gusta el fútbol y la música.","كتعجبني الكورة والموسيقى."],["Mi color favorito es el azul.","اللون اللي كيعجبني هو الزرق."]],
+    questions: [["¿De dónde es Youssef?","De Marruecos",["De España","De Francia","De Madrid"]],["¿Cuántos años tiene?","Veinticinco",["Quince","Treinta","Veinte"]],["¿Qué hace todos los días?","Estudia español",["Juega al fútbol","Trabaja en Madrid","Va a la playa"]]] },
+  { id: "r-a1-2", level: "A1", es: "Mi familia", ar: "العائلة ديالي",
+    sentences: [["Mi familia no es muy grande.","العائلة ديالي ماشي كبيرة بزاف."],["Mi padre se llama Hassan y es médico.","الباب سميتو حسن وهو طبيب."],["Mi madre se llama Amina y es profesora.","الماما سميتها أمينة وهي أستاذة."],["Tengo un hermano y una hermana.","عندي خو وأخت."],["Mi hermano Omar tiene doce años y es muy simpático.","خويا عمر عندو 12 عام وضريف بزاف."],["Mi hermana Sara es alta y tiene el pelo largo.","أختي سارة طويلة وعندها الشعر طويل."],["Los domingos comemos cuscús en casa de mis abuelos.","نهار الحد كناكلو الكسكس فدار جدي وجدتي."],["¡Quiero mucho a mi familia!","كنبغي العائلة ديالي بزاف!"]],
+    questions: [["¿Qué hace el padre?","Es médico",["Es profesor","Es ingeniero","Es camarero"]],["¿Cuántos años tiene Omar?","Doce",["Diez","Dos","Veinte"]],["¿Qué comen los domingos?","Cuscús",["Pescado","Pollo con arroz","Pan con queso"]]] },
+  { id: "r-a1-3", level: "A1", es: "Un día normal", ar: "نهار عادي",
+    sentences: [["Me levanto a las siete de la mañana.","كنفيق مع السبعة ديال الصباح."],["Desayuno pan, queso y un té con menta.","كنفطر بالخبز، الفرماج وكاس ديال أتاي بالنعناع."],["A las ocho voy al trabajo en autobús.","مع التمنية كنمشي للخدمة فالطوبيس."],["Trabajo de lunes a viernes.","كنخدم من الاثنين للجمعة."],["Como a las dos con mis compañeros.","كنتغدا مع الجوج مع الصحاب ديال الخدمة."],["Por la tarde, estudio español una hora.","فالعشية كنقرا الإسبانية ساعة."],["Ceno con mi familia a las nueve.","كنتعشا مع العائلة مع التسعود."],["Me acuesto a las once de la noche.","كننعس مع الحداش ديال الليل."]],
+    questions: [["¿A qué hora se levanta?","A las siete",["A las ocho","A las nueve","A las once"]],["¿Cómo va al trabajo?","En autobús",["En coche","A pie","En tren"]],["¿Qué hace por la tarde?","Estudia español",["Juega al fútbol","Duerme","Cocina"]]] },
+  { id: "r-a1-4", level: "A1", es: "En el mercado", ar: "فالسوق",
+    sentences: [["—Buenos días. ¿Qué desea?","—صباح الخير. شنو بغيتي؟"],["—Hola. Quiero un kilo de tomates, por favor.","—سلام. بغيت كيلو ديال الطماطم عافاك."],["—Aquí tiene. ¿Algo más?","—هاهي. شي حاجة أخرى؟"],["—Sí, medio kilo de fresas. ¿Cuánto cuestan?","—إيه، نص كيلو ديال الفريز. بشحال؟"],["—El kilo de fresas cuesta cuatro euros.","—الكيلو ديال الفريز بربعة أورو."],["—Perfecto. ¿Cuánto es todo?","—مزيان. شحال كلشي؟"],["—Son cinco euros con cincuenta.","—خمسة أورو وخمسين سنتيم."],["—Aquí tiene. ¡Muchas gracias!","—هاهي. شكرا بزاف!"],["—De nada. ¡Adiós!","—بلا جميل. بسلامة!"]],
+    questions: [["¿Cuántos tomates compra?","Un kilo",["Medio kilo","Dos kilos","Cinco kilos"]],["¿Cuánto cuesta el kilo de fresas?","Cuatro euros",["Cinco euros","Dos euros","Diez euros"]],["¿Cuánto paga en total?","Cinco euros con cincuenta",["Cuatro euros","Diez euros","Cinco euros"]]] },
+  { id: "r-a1-5", level: "A1", es: "Mi ciudad", ar: "المدينة ديالي",
+    sentences: [["Vivo en Rabat, la capital de Marruecos.","ساكن فالرباط، العاصمة ديال المغرب."],["Es una ciudad bonita y tranquila.","مدينة زوينة وهانية."],["En el centro hay muchas tiendas y restaurantes.","فوسط المدينة كاينين بزاف ديال الحوانت والريسطورات."],["Mi casa está cerca de la playa.","الدار ديالي قريبة من البحر."],["Al lado de mi casa hay una mezquita y una farmacia.","حدا الدار ديالي كاين جامع وفرمسيان."],["Para ir al trabajo, tomo el tranvía.","باش نمشي للخدمة كناخد الطرامواي."],["En verano hace calor, pero en invierno llueve mucho.","فالصيف كتكون السخونية، ولكن فالشتا كتشتا بزاف."],["Me gusta mucho mi ciudad.","كتعجبني المدينة ديالي بزاف."]],
+    questions: [["¿Dónde está su casa?","Cerca de la playa",["En el centro","Lejos de la ciudad","Al lado del mercado"]],["¿Qué hay al lado de su casa?","Una mezquita y una farmacia",["Un hospital","Un parque y un banco","Un supermercado"]],["¿Cómo va al trabajo?","En tranvía",["En autobús","En taxi","A pie"]]] },
+  { id: "r-a2-1", level: "A2", es: "El fin de semana pasado", ar: "الويكاند اللي فات",
+    sentences: [["El sábado pasado me levanté tarde, a las diez.","السبت اللي فات فقت معطل، مع العشرة."],["Desayuné con mi familia y después fui al mercado.","فطرت مع العائلة ومن بعد مشيت للسوق."],["Compré fruta, verduras y un regalo para mi madre.","شريت الفاكهة، الخضرة وكادو للماما."],["Por la tarde, jugué al fútbol con mis amigos en el parque.","فالعشية لعبت الكورة مع صحابي فالبارك."],["Ganamos el partido tres a uno.","ربحنا الماتش تلاتة لواحد."],["El domingo visité a mis abuelos en el campo.","نهار الحد زرت جدي وجدتي فالعروبية."],["Mi abuela preparó un tajín delicioso.","جدتي طيبات واحد الطاجين بنين."],["Fue un fin de semana muy tranquilo.","كان ويكاند هاني بزاف."]],
+    questions: [["¿A qué hora se levantó el sábado?","A las diez",["A las siete","A las ocho","A las doce"]],["¿Qué compró para su madre?","Un regalo",["Fruta","Un libro","Flores"]],["¿Quién preparó el tajín?","Su abuela",["Su madre","Su hermano","Él"]]] },
+  { id: "r-a2-2", level: "A2", es: "Cuando era pequeño", ar: "فاش كنت صغير",
+    sentences: [["Cuando era pequeño, vivía en un pueblo cerca de Chefchaouen.","فاش كنت صغير، كنت ساكن فدوار قريب من شفشاون."],["Mi casa era pequeña, pero tenía un jardín muy grande.","الدار ديالنا كانت صغيرة، ولكن كانت فيها جردة كبيرة بزاف."],["Todos los días iba a la escuela a pie con mis primos.","كل نهار كنت كنمشي للمدرسة على رجلي مع ولاد عمي."],["Después de clase, jugábamos en la calle hasta la noche.","من بعد القراية، كنا كنلعبو فالزنقة حتى لليل."],["Mi abuelo siempre nos contaba historias.","جدي ديما كان كيحكي لينا الحكايات."],["En invierno hacía mucho frío y nevaba en las montañas.","فالشتا كان البرد بزاف وكان كيطيح الثلج فالجبال."],["No teníamos internet, pero éramos muy felices.","ماكانش عندنا الأنترنت، ولكن كنا فرحانين بزاف."]],
+    questions: [["¿Dónde vivía de pequeño?","En un pueblo cerca de Chefchaouen",["En Rabat","En Madrid","En Tánger"]],["¿Cómo iba a la escuela?","A pie",["En autobús","En coche","En bicicleta"]],["¿Qué hacía su abuelo?","Contaba historias",["Cocinaba","Trabajaba en Tánger","Jugaba al fútbol"]]] },
+  { id: "r-b1-1", level: "B1", es: "Consejos para aprender español", ar: "نصائح باش تتعلم الإسبانية",
+    sentences: [["Aprender un idioma nuevo requiere tiempo y paciencia.","تعلم لغة جديدة كيحتاج الوقت والصبر."],["Es importante que practiques un poco cada día.","مهم تتمرن شوية كل نهار."],["Si puedes, escucha canciones y podcasts en español.","إلا قدرتي، سمع أغاني وبودكاست بالإسبانية."],["Deberías ver series con subtítulos en español.","خاصك تشوف مسلسلات بالترجمة بالإسبانية."],["No tengas miedo de cometer errores: así se aprende.","ماتخافش تغلط: هكا كيتعلم الواحد."],["Te recomiendo que hables con nativos siempre que puedas.","كننصحك تهضر مع الإسبان كل ما قدرتي."],["Poco a poco, notarás que entiendes mucho más.","بشوية بشوية، غادي تلاحظ بلي ولّيتي كتفهم كثر."]],
+    questions: [["¿Qué necesitas para aprender un idioma?","Tiempo y paciencia",["Mucho dinero","Un profesor nativo","Un diccionario"]],["¿Qué deberías ver?","Series con subtítulos en español",["Películas en inglés","Noticias en árabe","Dibujos animados"]],["¿Qué dice el texto sobre los errores?","Que no hay que tenerles miedo",["Que son muy malos","Que hay que evitarlos siempre","Que solo los niños los cometen"]]] },
+  { id: "r-b1-2", level: "B1", es: "Mis planes para el futuro", ar: "المشاريع ديالي فالمستقبل",
+    sentences: [["El año que viene terminaré mis estudios en la universidad.","العام الجاي غادي نسالي القراية فالجامعة."],["Después, me gustaría trabajar en España durante unos años.","من بعد، كنتمنى نخدم فسبانيا شي سنين."],["Por eso estudio español con tanta ilusión.","داكشي علاش كنقرا الإسبانية بهاد الحماس."],["Si encuentro un buen trabajo, alquilaré un piso en Valencia.","إلا لقيت خدمة مزيانة، غادي نكري برطما ففالنسيا."],["Mis padres prefieren que me quede en Marruecos.","الواليدين ديالي كيفضلو نبقى فالمغرب."],["Sin embargo, creo que será una experiencia muy buena.","ولكن، كنظن غادي تكون تجربة مزيانة بزاف."],["Algún día volveré y abriré mi propia empresa.","شي نهار غادي نرجع ونحل الشركة ديالي."]],
+    questions: [["¿Dónde le gustaría trabajar?","En España",["En Francia","En Marruecos","En México"]],["¿Qué prefieren sus padres?","Que se quede en Marruecos",["Que viaje mucho","Que estudie inglés","Que viva en Valencia"]],["¿Qué hará algún día?","Abrirá su propia empresa",["Comprará un coche","Estudiará medicina","Vivirá en Madrid"]]] },
+  { id: "r-b2-1", level: "B2", es: "El teletrabajo", ar: "الخدمة من الدار",
+    sentences: [["Desde hace unos años, cada vez más personas trabajan desde casa.","هادي شي سنين، الناس اللي كيخدمو من الدار كيزيدو."],["Para muchos, es una gran ventaja: no pierden tiempo en el tráfico.","بالنسبة لبزاف، هادي ميزة كبيرة: ما كيضيعوش الوقت فالزحام."],["Además, pueden organizar su horario con más libertad.","وزيد على هادشي، كيقدرو ينظمو الوقت ديالهم بحرية كثر."],["Sin embargo, el teletrabajo también tiene inconvenientes.","ولكن، الخدمة من الدار عندها حتى هي سلبيات."],["Algunas personas se sienten solas y echan de menos a sus compañeros.","شي ناس كيحسو براسهم بوحدهم وكيتوحشو الصحاب ديال الخدمة."],["Si no se establecen límites claros, es fácil trabajar demasiado.","إلا ما تحطوش حدود واضحة، ساهل تخدم بزاف."],["Por lo tanto, lo ideal sería combinar días en casa y días en la oficina.","إذن، الأحسن هو تخلط بين أيام فالدار وأيام فالبيرو."]],
+    questions: [["¿Cuál es una ventaja del teletrabajo?","No se pierde tiempo en el tráfico",["Se gana más dinero","Se trabaja menos","Se viaja más"]],["¿A quién echan de menos algunas personas?","A sus compañeros",["A su familia","A sus vecinos","A su jefe"]],["¿Qué sería lo ideal según el texto?","Combinar casa y oficina",["Trabajar solo en casa","Trabajar solo en la oficina","Trabajar menos días"]]] },
+  { id: "r-c1-1", level: "C1", es: "La importancia de los idiomas", ar: "الأهمية ديال اللغات",
+    sentences: [["Hablar varios idiomas ya no es un lujo, sino una necesidad en el mundo actual.","الهضرة بزاف ديال اللغات ما بقاتش رفاهية، ولات ضرورة فالعالم ديال اليوم."],["Quien domina otra lengua tiene acceso a otras culturas y a otras formas de pensar.","اللي كيتقن لغة أخرى كيوصل لثقافات أخرى وطرق أخرى ديال التفكير."],["Marruecos, por su historia, es un ejemplo de convivencia entre lenguas.","المغرب، بسبب التاريخ ديالو، مثال ديال التعايش بين اللغات."],["En el norte del país, el español sigue muy presente en la vida cotidiana.","فالشمال ديال البلاد، الإسبانية باقية حاضرة بزاف فالحياة اليومية."],["Aunque aprender una lengua exija mucho esfuerzo, merece la pena.","واخا تعلم لغة كيحتاج بزاف ديال المجهود، كيستاهل."],["No se trata solo de encontrar un mejor trabajo, sino de abrir la mente.","ماشي غير باش تلقى خدمة حسن، ولكن باش تحل العقل ديالك."]],
+    questions: [["Según el texto, hablar idiomas es...","Una necesidad",["Un lujo","Una pérdida de tiempo","Algo muy fácil"]],["¿Dónde está muy presente el español en Marruecos?","En el norte",["En el sur","En el desierto","En Rabat"]],["¿Aprender una lengua merece la pena?","Sí, aunque exija esfuerzo",["No, es muy caro","Solo para trabajar","No, es imposible"]]] }
+];
+
 /* ============ تصاور الكلمات (لتمرين «شنو سمية هادي؟») ============ */
 const PICS = {
   uno: "1", dos: "2", tres: "3", cinco: "5", diez: "10", once: "11", doce: "12", quince: "15", veinte: "20", treinta: "30", cincuenta: "50", cien: "100", mil: "1000",
@@ -677,18 +729,67 @@ if (hasTTS) {
   try { speechSynthesis.addEventListener("voiceschanged", loadVoices); } catch (e) {}
   setTimeout(loadVoices, 0); setTimeout(loadVoices, 1500);
 }
-function speak(t) {
+// صوت التيليفون: كيتستعمل غير للحوايج اللي ماعندهمش صوت مسجل (المحادثة، الدروس اللي زدتي)
+function ttsSpeak(t, opts = {}) {
   try {
-    if (!hasTTS) { showToast("المتصفح ديالك ما فيهش القراية بالصوت."); return; }
+    if (!hasTTS) { showToast("المتصفح ديالك ما فيهش القراية بالصوت."); if (opts.onend) setTimeout(opts.onend, 1500); return; }
     if (!esVoices.length) loadVoices();
     const u = new SpeechSynthesisUtterance(t.replace(/___/g, ""));
     const v = chosenVoice();
     if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = "es-ES"; }
-    u.rate = rate;
-    speechSynthesis.cancel(); speechSynthesis.speak(u);
+    u.rate = opts.slow ? Math.min(rate, 0.7) : rate;
+    if (opts.onend) u.onend = opts.onend;
+    speechSynthesis.speak(u);
     if (!v && voicesLoaded && !voiceWarned) { voiceWarned = true; showToast("ما لقيتش صوت إسباني فالتيليفون ديالك، داكشي علاش النطق ماشي مزيان.", true); }
   } catch (e) {}
 }
+
+/* ============ الصوت المسجل (audio/*.mp3) ============ */
+let AUDIO = null, actx = null, curSrc = null, playToken = 0;
+const audioBufs = {};
+try {
+  fetch("audio/manifest.json").then(r => r.ok ? r.json() : null).then(m => { AUDIO = m; }).catch(() => {});
+} catch (e) {}
+function ensureCtx() {
+  try {
+    if (!actx) { const C = window.AudioContext || window.webkitAudioContext; if (C) actx = new C(); }
+    if (actx && actx.state === "suspended") actx.resume();
+  } catch (e) {}
+  return actx;
+}
+const clipFor = (t, slow) => AUDIO && ((slow && AUDIO.s[t]) || AUDIO.n[t]) || null;
+function audioBuf(fi) {
+  if (!audioBufs[fi]) audioBufs[fi] = fetch("audio/" + AUDIO.f[fi]).then(r => r.arrayBuffer())
+    .then(b => new Promise((res, rej) => actx.decodeAudioData(b, res, rej)))
+    .catch(e => { delete audioBufs[fi]; throw e; });
+  return audioBufs[fi];
+}
+function preloadAudio(texts) {
+  if (!AUDIO || !ensureCtx()) return;
+  uniq(texts.map(t => clipFor(t)).filter(Boolean).map(c => c[0])).slice(0, 3).forEach(fi => audioBuf(fi).catch(() => {}));
+}
+function stopAudio() {
+  playToken++;
+  try { if (curSrc) curSrc.stop(); } catch (e) {}
+  curSrc = null;
+  try { if (hasTTS) speechSynthesis.cancel(); } catch (e) {}
+}
+// speak(النص, {slow, onend}) — كيقلب على الصوت المسجل، وإلا ماكانش كيستعمل صوت التيليفون
+function speak(t, opts = {}) {
+  stopAudio();
+  const token = playToken;
+  const c = clipFor(t, opts.slow);
+  if (!c || !ensureCtx()) { ttsSpeak(t, opts); return; }
+  audioBuf(c[0]).then(buf => {
+    if (token !== playToken) return;
+    const src = actx.createBufferSource();
+    src.buffer = buf; src.connect(actx.destination);
+    src.onended = () => { if (token === playToken && opts.onend) opts.onend(); };
+    src.start(0, c[1], c[2]);
+    curSrc = src;
+  }).catch(() => { if (token === playToken) ttsSpeak(t, opts); });
+}
+const speechSecs = (t, slow) => { const c = clipFor(t, slow); return c ? c[2] : t.length * (slow ? 0.1 : 0.075) + 0.5; };
 let toastTimer;
 function showToast(msg, withFix) {
   let t = document.getElementById("toast");
@@ -704,6 +805,7 @@ const allLessons = () => LESSONS.concat(mine);
 const lessonsOf = lv => allLessons().filter(l => l.level === lv);
 const findLesson = id => allLessons().find(l => l.id === id);
 const asksOf = l => l.ask || ASK[l.id] || [];
+const BOOK = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5a2 2 0 0 1 2-2h6v17H4a2 2 0 0 1-2-2z"/><path d="M22 5a2 2 0 0 0-2-2h-6v17h6a2 2 0 0 0 2-2z"/></svg>';
 const KEYS = ["á", "é", "í", "ó", "ú", "ñ", "ü", "¿", "¡"];
 const keysHTML = target => `<div class="keys" aria-label="حروف إسبانية">${KEYS.map(k => `<button type="button" class="key" data-act="key" data-k="${k}" data-target="${target}">${k}</button>`).join("")}</div>`;
 
@@ -818,9 +920,13 @@ function makeQuiz(lesson) {
 
 /* ============ الحالة ============ */
 let view = { name: "home" };
-let quiz = null, cards = null, chat = null, pendingDelete = null;
+let quiz = null, cards = null, chat = null, reading = null, pendingDelete = null;
 
-function go(v) { view = v; render(); window.scrollTo(0, 0); }
+function go(v) {
+  if (reading) { reading.playing = false; clearTimeout(reading.timer); }
+  stopAudio();
+  view = v; render(); window.scrollTo(0, 0);
+}
 
 /* ============ الصفحات ============ */
 function renderHome() {
@@ -849,6 +955,15 @@ function renderHome() {
       return `<button class="row ${l.mine ? "mine" : ""}" data-act="open" data-id="${l.id}"><span class="num">${i + 1}</span><span class="t"><span class="es" lang="es">${esc(l.es)}</span><small>${esc(l.ar)}</small></span>${pill}</button>`;
     }).join("")}</div>`;
   }).join("")}
+  ${(() => {
+    const texts = TEXTS.filter(t => t.level === level);
+    if (!texts.length) return "";
+    return `<h3 class="sec" style="margin-top:22px">نصوص للقراءة</h3><div class="list">${texts.map((t, i) => {
+      const s = scores[t.id];
+      const pill = s == null ? '<span class="pill new">جديد</span>' : `<span class="pill ${s >= 80 ? "ok" : "mid"}">${s}%</span>`;
+      return `<button class="row read" data-act="text" data-id="${t.id}"><span class="num">${BOOK}</span><span class="t"><span class="es" lang="es">${esc(t.es)}</span><small>${esc(t.ar)} · ${t.sentences.length} جمل</small></span>${pill}</button>`;
+    }).join("")}</div>`;
+  })()}
   <button class="add-row" data-act="add"><b>+ زيد درس من الفيديو</b><small>كتب الكلمات والجمل اللي تعلمتي فالفيديو، والتطبيق يصاوب منهم تمارين.</small></button>`;
 }
 
@@ -1080,6 +1195,80 @@ function renderChat() {
   </div>`;
 }
 
+/* ============ القراءة ============ */
+function openText(t) {
+  reading = { text: t, cur: -1, mode: "slow", shadow: false, playing: false, turn: false, showAr: false, answers: {},
+    qopts: t.questions.map(q => shuffle([q[1], ...q[2]])) };
+  go({ name: "text", id: t.id });
+  preloadAudio(t.sentences.map(x => x[0]));
+}
+function readCtlHTML() {
+  const r = reading;
+  const seg = `<div class="seg two">${[["slow", "بشوية"], ["normal", "السرعة العادية"]].map(([m, t]) => `<button class="seg-b" data-act="rmode" data-m="${m}" aria-pressed="${r.mode === m}">${t}</button>`).join("")}</div>`;
+  const main = r.playing
+    ? `<button class="btn stop" data-act="rstop">■ وقف</button>`
+    : `<div class="actions" style="margin:0"><button class="btn" data-act="rplay" data-sh="0">▶ اقرا ليا النص</button><button class="btn ghost" data-act="rplay" data-sh="1">سمع وعاود</button></div>`;
+  const status = r.playing ? (r.turn ? `<p class="turn-msg">دورك! عاود الجملة بصوت عالي...</p>` : `<p class="hint">كيقرا الجملة ${r.cur + 1} من ${r.text.sentences.length}...</p>`) : "";
+  return `${seg}${main}${status}<button class="linkish" data-act="rtr">${r.showAr ? "خبي الترجمة" : "بين الترجمة بالدارجة"}</button>`;
+}
+function updateReading() {
+  if (view.name !== "text") return;
+  document.querySelectorAll(".sent").forEach((el, i) => {
+    el.classList.toggle("on", i === reading.cur);
+    el.classList.toggle("turn", i === reading.cur && reading.turn);
+  });
+  const ctl = document.getElementById("rctl");
+  if (ctl) ctl.innerHTML = readCtlHTML();
+  const on = document.querySelector(".sent.on");
+  if (on) { try { on.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); } catch (e) {} }
+}
+function readStep(i) {
+  const s = reading.text.sentences;
+  if (!reading.playing || i >= s.length) { reading.playing = false; reading.cur = -1; reading.turn = false; updateReading(); return; }
+  reading.cur = i; reading.turn = false; updateReading();
+  const slow = reading.mode === "slow";
+  speak(s[i][0], { slow, onend: () => {
+    if (!reading.playing) return;
+    if (reading.shadow) {
+      reading.turn = true; updateReading();
+      reading.timer = setTimeout(() => readStep(i + 1), (speechSecs(s[i][0], slow) * 1.3 + 1.2) * 1000);
+    } else reading.timer = setTimeout(() => readStep(i + 1), 400);
+  } });
+}
+function stopReading() { reading.playing = false; reading.turn = false; reading.cur = -1; clearTimeout(reading.timer); stopAudio(); updateReading(); }
+
+function renderText() {
+  const r = reading, t = r.text;
+  const lv = LEVELS.find(x => x.id === t.level);
+  const done = Object.keys(r.answers).length;
+  const right = t.questions.filter((q, i) => r.answers[i] === q[1]).length;
+  return `
+  <button class="back" data-act="home">→ رجع للدروس</button>
+  <div class="eyebrow">${t.level} · ${lv.name} · قراءة</div>
+  <h1 class="lesson-title" lang="es">${esc(t.es)}</h1>
+  <p class="lesson-ar">${esc(t.ar)}</p>
+  <section class="note"><h3>كيفاش تخدم بهاد النص</h3>
+    <p>1. قرا النص بوحدك بصوت عالي، جملة بجملة.</p>
+    <p>2. كليكي على «اقرا ليا النص» وسمع كيفاش كيتنطق. كليكي على أي جملة باش تسمعها بوحدها.</p>
+    <p>3. «سمع وعاود»: كيقرا جملة ويتسنى حتى تعاودها نتا بصوت عالي.</p></section>
+  <div id="rctl" class="rctl">${readCtlHTML()}</div>
+  <div class="reading" lang="es">
+    ${t.sentences.map(([es, ar], i) => `<p class="sent ${i === r.cur ? "on" : ""}" data-act="sent" data-i="${i}"><span class="es">${esc(es)}</span>${r.showAr ? `<span class="tr" lang="ar" dir="rtl">${esc(ar)}</span>` : ""}</p>`).join("")}
+  </div>
+  <h3 class="sec" style="margin-top:26px">فهمتي النص؟</h3>
+  <div class="rqs">
+    ${t.questions.map((q, qi) => {
+      const a = r.answers[qi];
+      return `<div class="rq"><div class="prompt es" lang="es" style="margin:0"><button class="say" data-act="say" data-t="${esc(q[0])}" aria-label="سمع السؤال">${SPEAK}</button><span>${esc(q[0])}</span></div>
+      <div class="opts">${r.qopts[qi].map(o => {
+        const cls = a == null ? "" : o === q[1] ? "right" : o === a ? "wrong" : "";
+        return `<button class="opt es ${cls}" lang="es" data-act="rq" data-q="${qi}" data-o="${esc(o)}" ${a == null ? "" : "disabled"}>${esc(o)}</button>`;
+      }).join("")}</div></div>`;
+    }).join("")}
+  </div>
+  ${done === t.questions.length ? `<div class="feedback ${right === done ? "good" : "self"}" role="status"><b>${right} من ${done} صحاح</b><span>${right === done ? "ممتاز! فهمتي النص مزيان." : "عاود قرا النص وسمعو مرة أخرى."}</span></div>` : ""}`;
+}
+
 function renderVoice() {
   const v = chosenVoice();
   const rates = [[0.7, "بشوية"], [0.85, "عادي"], [1, "بالزربة"]];
@@ -1094,11 +1283,11 @@ function renderVoice() {
   return `
   <button class="back" data-act="voiceback">→ رجع</button>
   <h1 class="lesson-title" style="direction:rtl;text-align:right">الصوت والنطق</h1>
-  <p class="lesson-ar">التطبيق كيستعمل الأصوات اللي فالتيليفون ديالك. خاص يكون فيه صوت إسباني باش النطق يكون صحيح.</p>
+  <p class="lesson-ar">الكلمات والجمل والنصوص ديال الدروس عندهم صوت مسجل بالإسبانية ديال سبانيا، وما كيحتاجو والو. صوت التيليفون كيتستعمل غير فالمحادثة مع الأستاذ وفالدروس اللي زدتي نتا، وهادوك اللي كتبدل هنا.</p>
   <div class="form">
     ${status}
     ${hasTTS ? `<div class="field">السرعة<div class="seg">${rates.map(([r, t]) => `<button type="button" class="seg-b" data-act="rate" data-r="${r}" aria-pressed="${Math.abs(rate - r) < 0.01}">${t}</button>`).join("")}</div></div>
-    <button class="btn" data-act="say" data-t="Hola, ¿cómo estás? Me llamo Lucía y vivo en Madrid.">جرب الصوت</button>` : ""}
+    <button class="btn" data-act="ttstest">جرب صوت التيليفون</button>` : ""}
   </div>
   <h3 class="sec" style="margin-top:26px">كيفاش تزيد صوت إسباني</h3>
   <div class="steps">
@@ -1155,6 +1344,7 @@ function render() {
   else if (view.name === "chat") html = renderChat();
   else if (view.name === "add") html = renderAdd();
   else if (view.name === "voice") html = renderVoice();
+  else if (view.name === "text") html = reading ? renderText() : renderHome();
   $app.innerHTML = html;
   if (view.name === "chat") {
     const inp = document.getElementById("chatIn");
@@ -1225,13 +1415,36 @@ $app.addEventListener("click", e => {
   switch (act) {
     case "home": go({ name: "home" }); break;
     case "level": level = id; store.set("aula.level", level); render(); break;
-    case "open": go({ name: "lesson", id }); break;
+    case "open": { go({ name: "lesson", id }); const l = findLesson(id); if (l) preloadAudio((l.vocab || []).map(v => v[0])); break; }
+    case "text": openText(TEXTS.find(t => t.id === id)); break;
+    case "rmode": reading.mode = b.dataset.m; if (reading.playing) { const i = reading.cur; stopAudio(); clearTimeout(reading.timer); readStep(i); } else updateReading(); break;
+    case "rtr": reading.showAr = !reading.showAr; render(); break;
+    case "rplay": ensureCtx(); reading.shadow = b.dataset.sh === "1"; reading.playing = true; readStep(0); break;
+    case "rstop": stopReading(); break;
+    case "sent": {
+      const i = +b.dataset.i;
+      if (reading.playing) stopReading();
+      reading.cur = i; updateReading();
+      speak(reading.text.sentences[i][0], { slow: reading.mode === "slow", onend: () => { if (!reading.playing) { reading.cur = -1; updateReading(); } } });
+      break;
+    }
+    case "rq": {
+      const qi = +b.dataset.q; reading.answers[qi] = b.dataset.o;
+      const t = reading.text;
+      if (Object.keys(reading.answers).length === t.questions.length) {
+        const pct = Math.round(t.questions.filter((q, i) => reading.answers[i] === q[1]).length / t.questions.length * 100);
+        scores[t.id] = Math.max(pct, scores[t.id] || 0); store.set("aula.scores", scores);
+      }
+      const y = window.scrollY; render(); window.scrollTo(0, y);
+      break;
+    }
     case "add": go({ name: "add" }); break;
     case "edit": go({ name: "add", editId: id }); break;
     case "say": speak(b.dataset.t); break;
     case "voice": loadVoices(); go({ name: "voice", back: view }); break;
     case "voiceback": go(view.back && view.back.name !== "voice" ? view.back : { name: "home" }); break;
-    case "rate": rate = +b.dataset.r; store.set("aula.rate", rate); render(); speak("Hola, ¿qué tal?"); break;
+    case "rate": rate = +b.dataset.r; store.set("aula.rate", rate); render(); stopAudio(); ttsSpeak("Hola, ¿qué tal?"); break;
+    case "ttstest": stopAudio(); ttsSpeak("Hola, ¿cómo estás? Me llamo Lucía y vivo en Madrid."); break;
     case "key": {
       const t = document.getElementById(b.dataset.target);
       if (t && !t.disabled) { t.focus(); t.setRangeText(b.dataset.k, t.selectionStart, t.selectionEnd, "end"); }
@@ -1268,7 +1481,7 @@ $app.addEventListener("click", e => {
 });
 
 $app.addEventListener("change", e => {
-  if (e.target.id === "voiceSel") { voicePref = e.target.value; store.set("aula.voice", voicePref); speak("Hola, ¿qué tal? Encantado de conocerte."); }
+  if (e.target.id === "voiceSel") { voicePref = e.target.value; store.set("aula.voice", voicePref); stopAudio(); ttsSpeak("Hola, ¿qué tal? Encantado de conocerte."); }
 });
 
 $app.addEventListener("keydown", e => {
