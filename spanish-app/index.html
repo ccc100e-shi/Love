@@ -163,6 +163,50 @@ h3.sec { font-size: 15px; font-weight: 600; color: var(--muted); margin-bottom: 
 .help code { font-family: var(--display); color: var(--ink); direction: ltr; unicode-bidi: isolate; }
 .err { color: var(--bad); font-size: 14px; margin: 0; }
 .danger { background: none; border: 0; color: var(--bad); font-size: 14px; padding: 8px 0; }
+/* practice */
+.pic { font-size: 88px; line-height: 1.15; text-align: center; margin: 4px 0 20px; }
+.pic.num { font-family: var(--display); font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.answer-form { display: flex; flex-direction: column; gap: 10px; }
+.answer-input { font: inherit; font-family: var(--display); font-size: 20px; direction: ltr; text-align: left; padding: 13px 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); width: 100%; resize: vertical; }
+.answer-input.right { border-color: var(--good); background: var(--good-soft); }
+.answer-input.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.keys { display: flex; flex-wrap: wrap; gap: 5px; direction: ltr; }
+.key { background: var(--surface-2); border: 0; border-radius: 8px; min-width: 33px; padding: 4px 6px; font-family: var(--display); font-size: 17px; }
+.key:hover { background: var(--accent-soft); }
+.diff mark { background: var(--sun-soft); color: var(--bad); border-radius: 3px; text-decoration: underline; text-underline-offset: 3px; }
+.row-say { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.row-say .es { font-size: 18px; }
+.hint { color: var(--muted); font-size: 14px; }
+.listen { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 4px 0 20px; }
+.listen-btn { width: 88px; height: 88px; border-radius: 99px; border: 0; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; }
+.listen-btn svg { width: 38px; height: 38px; }
+.feedback.self, .feedback.wait { background: var(--surface); border: 1.5px solid var(--line); }
+.btn.talk { grid-column: 1 / -1; background: var(--sun); color: #1b1606; display: flex; flex-direction: column; align-items: center; gap: 0; }
+.btn.talk small { font-weight: 400; font-size: 13px; opacity: .8; }
+/* chat */
+.chat-title { flex: 1; text-align: left; color: var(--muted); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-title b { color: var(--ink); }
+.chat { display: flex; flex-direction: column; gap: 10px; padding-bottom: 170px; }
+.bubble { max-width: 86%; padding: 10px 14px; border-radius: 18px; display: flex; flex-direction: column; gap: 6px; }
+.bubble p { margin: 0; }
+.bubble .es { font-size: 17px; text-align: left; }
+.bubble.tutor { align-self: flex-start; background: var(--surface); border: 1px solid var(--line); border-start-start-radius: 6px; }
+.bubble.me { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-start-end-radius: 6px; }
+.bubble-tools { display: flex; align-items: center; gap: 10px; }
+.linkish { background: none; border: 0; padding: 0; color: var(--accent); font-size: 14px; }
+.tr { color: var(--muted); font-size: 15px; }
+.fix { align-self: flex-end; max-width: 86%; border-radius: 12px; padding: 8px 12px; font-size: 14.5px; display: flex; flex-direction: column; gap: 4px; margin-top: -4px; }
+.fix.good { background: var(--good-soft); } .fix.good b { color: var(--good); }
+.fix.bad { background: var(--sun-soft); } .fix.bad b { color: var(--bad); }
+.typing { flex-direction: row; gap: 5px; padding: 14px 16px; }
+.typing span { width: 7px; height: 7px; border-radius: 99px; background: var(--muted); animation: blink 1.2s infinite; }
+.typing span:nth-child(2) { animation-delay: .2s; } .typing span:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+.composer { position: fixed; left: 0; right: 0; bottom: 0; background: var(--bg); border-top: 1px solid var(--line); padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); }
+.composer-in { max-width: 680px; margin-inline: auto; display: flex; flex-direction: column; gap: 8px; }
+.chat-form { display: flex; gap: 8px; }
+.chat-form .answer-input { font-size: 17px; padding: 11px 13px; }
+@media (prefers-reduced-motion: reduce) { .typing span { animation: none; opacity: .6; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 @media (max-width: 420px) { .levels { gap: 5px; } .lvl b { font-size: 19px; } .vrow { grid-template-columns: 36px 1fr; } .vrow .ar { grid-column: 2; margin-top: -6px; } }
 </style>
@@ -502,6 +546,81 @@ const LESSONS = [
     build: [["Quedo a la espera de su respuesta","كنتسنى الجواب ديالكم"],["Le saluda atentamente","مع فائق الاحترام"]] }
 ];
 
+/* ============ أسئلة الممارسة: [السؤال بالإسبانية, شنو خاصك تجاوب (بالدارجة), مثال ديال جواب] ============ */
+const ASK = {
+  c01: [["¿Cómo se escribe tu nombre?","تهجى السمية ديالك حرف بحرف","A-H-M-E-D: a, hache, eme, e, de."],["¿Cómo se llama la letra Ñ?","شنو سمية الحرف Ñ؟","Se llama eñe."]],
+  c02: [["Hola, ¿qué tal?","رد على السلام","Muy bien, gracias. ¿Y tú?"],["¿Cómo te llamas?","قول سميتك","Me llamo Ahmed."]],
+  c02b: [["¿De dónde eres?","قول منين نتا","Soy de Marruecos."],["¿Hablas español?","قول واش كتهضر الإسبانية","Sí, hablo un poco de español."]],
+  c03: [["¿Cuántos años tienes?","قول شحال فعمرك (بالحروف)","Tengo veinticinco años."],["¿Cuánto son diez más cinco?","حسب وجاوب بالحروف","Son quince."]],
+  c04: [["¿En qué piso vives?","فأشمن طابق ساكن؟","Vivo en el segundo piso."],["¿Cuál es el primer mes del año?","شنو الشهر الأول فالعام؟","El primer mes del año es enero."]],
+  c05: [["¿Qué hora es? (8:30)","قول الساعة 8:30","Son las ocho y media."],["¿A qué hora te levantas?","فوقاش كتفيق؟","Me levanto a las siete."]],
+  c06: [["¿Qué día es hoy?","أشمن نهار اليوم؟","Hoy es lunes."],["¿Qué día no trabajas?","أشمن نهار ما كتخدمش؟","No trabajo los domingos."]],
+  c07: [["¿En qué mes es tu cumpleaños?","فأشمن شهر عيد الميلاد ديالك؟","Mi cumpleaños es en mayo."],["¿Cuál es tu mes favorito?","أشمن شهر كيعجبك كثر؟","Mi mes favorito es agosto."]],
+  c08: [["¿Qué tiempo hace hoy?","كيف داير الطقس اليوم؟","Hoy hace sol y calor."],["¿Cuál es tu estación favorita?","أشمن فصل كيعجبك كثر؟","Mi estación favorita es la primavera."]],
+  c09: [["¿Dónde está la farmacia? (←)","قول بلي الفرمسيان على ليسر","La farmacia está a la izquierda."],["¿Tu casa está cerca o lejos del centro?","الدار ديالك قريبة ولا بعيدة من وسط المدينة؟","Mi casa está cerca del centro."]],
+  c10: [["¿Qué fecha es hoy?","قول تاريخ اليوم","Hoy es el veinticuatro de septiembre."],["¿Cuándo es tu cumpleaños?","فوقاش عيد الميلاد ديالك؟","Mi cumpleaños es el cinco de mayo."]],
+  c11: [["¿Tú eres estudiante?","واش نتا طالب؟","Sí, yo soy estudiante."],["¿Quiénes son ellos? (tus amigos)","قول بلي هوما صحابك","Ellos son mis amigos."]],
+  c12: [["¿Tienes el libro?","جاوب واستعمل lo","Sí, lo tengo."],["¿Ves a tu madre hoy?","جاوب واستعمل la","Sí, la veo hoy."]],
+  c13: [["¿De qué color es el cielo?","شنو اللون ديال السما؟","El cielo es azul."],["¿Cuál es tu color favorito?","أشمن لون كيعجبك؟","Mi color favorito es el verde."]],
+  c14: [["¿Qué te duele?","شنو كيضرك؟","Me duele la cabeza."],["¿De qué color son tus ojos?","شنو اللون ديال عينيك؟","Mis ojos son marrones."]],
+  c15: [["¿Tienes hermanos?","واش عندك خوتك؟","Sí, tengo dos hermanos y una hermana."],["¿Cómo se llama tu madre?","شنو سمية الماما؟","Mi madre se llama Fatima."]],
+  c16: [["¿Cómo estás hoy?","كيداير اليوم؟ استعمل estar","Hoy estoy cansado pero contento."],["¿Cómo es tu mejor amigo?","وصف صاحبك","Mi mejor amigo es alto y simpático."]],
+  c17: [["¿A qué te dedicas?","شنو كتخدم؟","Soy profesor."],["¿Dónde trabaja un médico?","فين كيخدم الطبيب؟","Un médico trabaja en un hospital."]],
+  c18: [["¿Qué comes en el desayuno?","شنو كتفطر؟","En el desayuno como pan con queso y bebo té."],["¿Te gusta el pescado?","واش كيعجبك الحوت؟","Sí, me gusta mucho el pescado."]],
+  c19: [["¿Qué fruta te gusta más?","أشمن فاكهة كتعجبك كثر؟","Me gustan las fresas."],["¿Qué necesitas para una ensalada?","شنو خاصك للشلاضة؟","Necesito tomate, lechuga y cebolla."]],
+  c20: [["¿Cuántas habitaciones tiene tu casa?","شحال من بيت فالدار ديالك؟","Mi casa tiene tres habitaciones."],["¿Dónde cocinas?","فين كطيب؟","Cocino en la cocina."]],
+  c21: [["¿Qué ropa llevas hoy?","شنو لابس اليوم؟","Hoy llevo una camiseta blanca y unos pantalones azules."],["¿Qué te pones cuando hace frío?","شنو كتلبس ملي كيكون البرد؟","Me pongo el abrigo."]],
+  c22: [["¿Cómo es tu pelo?","كيفاش الشعر ديالك؟","Tengo el pelo corto y moreno."],["¿Tu padre tiene barba?","واش الباب عندو اللحية؟","Sí, mi padre tiene barba."]],
+  c23: [["¿Qué hay en tu mochila?","شنو كاين فالصاك ديالك؟","En mi mochila hay un libro, un cuaderno y un bolígrafo."],["¿Me prestas un lápiz?","جاوب بإيه","Sí, claro. Toma."]],
+  c24: [["¿Dónde compras medicinas?","فين كتشري الدوا؟","Compro medicinas en la farmacia."],["¿Qué hay en tu ciudad?","شنو كاين فالمدينة ديالك؟","En mi ciudad hay un mercado, una mezquita y un parque."]],
+  c25: [["¿Tienes un animal en casa?","واش عندك شي حيوان فالدار؟","Sí, tengo un gato."],["¿Qué animal te gusta más?","أشمن حيوان كيعجبك كثر؟","Me gustan los caballos."]],
+  c26: [["¿Adónde vas de vacaciones?","فين كتمشي فالعطلة؟","Voy a la playa en agosto."],["¿Qué regalo quieres para tu cumpleaños?","شنو الكادو اللي بغيتي لعيد الميلاد؟","Quiero un libro."]],
+  c27: [["¿Qué deporte practicas?","أشمن رياضة كدير؟","Juego al fútbol."],["¿Vas al gimnasio?","واش كتمشي للجيم؟","Sí, voy al gimnasio dos veces por semana."]],
+  c28: [["¿Qué haces en tu tiempo libre?","شنو كدير فوقت الفراغ؟","En mi tiempo libre leo y escucho música."],["¿Qué haces los sábados?","شنو كدير نهار السبت؟","Los sábados salgo con mis amigos."]],
+  c29: [["¿Qué tareas haces en casa?","شنو كدير فالدار؟","Lavo los platos y hago la cama."],["¿Quién cocina en tu casa?","شكون كيطيب فالدار؟","Mi madre cocina en mi casa."]],
+  c30: [["¿De dónde eres? ¿Cuál es tu nacionalidad?","منين نتا وشنو الجنسية ديالك؟","Soy de Marruecos, soy marroquí."],["¿Qué idiomas hablas?","أشمن لغات كتهضر؟","Hablo árabe, francés y un poco de español."]],
+  "a1-3": [["¿Eres estudiante o profesor?","جاوب بالفعل SER","Soy estudiante."],["¿De dónde es tu familia?","منين العائلة ديالك؟","Mi familia es de Fez."]],
+  "a1-4": [["¿Dónde estás ahora?","فين نتا دابا؟","Estoy en casa."],["¿Hay un parque cerca de tu casa?","واش كاين بارك قريب من الدار؟","Sí, hay un parque cerca de mi casa."]],
+  "a1-6": [["¿Dónde vives?","فين ساكن؟","Vivo en Casablanca."],["¿Qué idiomas estudias?","أشمن لغات كتقرا؟","Estudio español e inglés."]],
+  "a1-8": [["¿Qué te gusta comer?","شنو كيعجبك تاكل؟","Me gusta comer cuscús."],["¿Te gustan los deportes?","واش كتعجبك الرياضة؟","Sí, me gustan mucho los deportes."]],
+  "a2-1": [["¿Qué hiciste ayer?","شنو درتي البارح؟","Ayer fui al trabajo y después vi una película."],["¿Adónde fuiste de vacaciones el año pasado?","فين مشيتي فالعطلة العام اللي فات؟","El año pasado fui a Agadir."]],
+  "a2-2": [["¿Dónde vivías de niño?","فين كنتي ساكن فاش كنتي صغير؟","De niño vivía en Tetuán."],["¿A qué jugabas de pequeño?","شنو كنتي كتلعب فاش كنتي صغير؟","Jugaba al fútbol en la calle."]],
+  "a2-3": [["¿Qué vas a hacer este fin de semana?","شنو غادي دير فالويكاند؟","Voy a visitar a mis abuelos."],["¿Qué vas a comer esta noche?","شنو غادي تاكل هاد الليلة؟","Voy a comer pescado."]],
+  "a2-4": [["¿Quién es mayor, tú o tu hermano?","شكون كبر، نتا ولا خوك؟","Mi hermano es mayor que yo."],["¿Qué es mejor, el té o el café?","شنو حسن، أتاي ولا القهوة؟","Para mí, el té es mejor que el café."]],
+  "b1-1": [["¿Qué harás el año que viene?","شنو غادي دير العام الجاي؟","El año que viene viajaré a España."],["¿Dónde vivirás en el futuro?","فين غادي تسكن فالمستقبل؟","En el futuro viviré en Madrid."]],
+  "b1-2": [["¿Qué harías con mucho dinero?","شنو تدير إلا كان عندك بزاف ديال الفلوس؟","Compraría una casa y viajaría por el mundo."],["Me duele la cabeza. ¿Qué me recomiendas?","عطيني نصيحة بـ deberías","Deberías descansar y beber agua."]],
+  "b1-3": [["¿Qué esperas de este año?","شنو كتمنى هاد العام؟","Espero que mi familia esté bien."],["¿Qué quieres que haga tu profesor?","شنو بغيتي الأستاذ يدير؟","Quiero que hable más despacio."]],
+  "b1-4": [["¿Has estado alguna vez en España?","واش عمرك مشيتي لسبانيا؟","No, nunca he estado en España."],["¿Qué has hecho hoy?","شنو درتي اليوم؟","Hoy he trabajado y he estudiado español."]],
+  "b2-1": [["¿Qué harías si fueras rico?","شنو تدير لو كنتي غني؟","Si fuera rico, ayudaría a mi familia."],["¿Qué harás si llueve mañana?","شنو غادي دير إلا شتات غدا؟","Si llueve mañana, me quedaré en casa."]],
+  "b2-2": [["¿Qué idiomas se hablan en Marruecos?","أشمن لغات كيتهضرو فالمغرب؟","En Marruecos se hablan árabe, amazigh y francés."],["¿Quién escribió Don Quijote?","جاوب بالمبني للمجهول","Don Quijote fue escrito por Cervantes."]],
+  "b2-3": [["¿Te gusta vivir en la ciudad? ¿Por qué?","جاوب واستعمل sin embargo ولا además","Me gusta vivir en la ciudad; sin embargo, hay mucho ruido."],["¿Saldrás aunque llueva?","جاوب بـ aunque","Sí, saldré aunque llueva."]],
+  "c1-1": [["¿Qué es pan comido para ti?","شنو الحاجة اللي ساهلة عليك بزاف؟","Para mí, cocinar es pan comido."],["¿Alguna vez has metido la pata?","واش عمرك غلطتي؟ حكي","Sí, una vez metí la pata con mi jefe."]],
+  "c1-2": [["¿Qué harás cuando termines tus estudios?","شنو غادي دير ملي تسالي القراية؟","Cuando termine mis estudios, buscaré trabajo."],["¿Qué haces para que tu español mejore?","شنو كدير باش تتحسن الإسبانية ديالك؟","Practico cada día para que mi español mejore."]],
+  "c1-3": [["Escribe el saludo de una carta formal.","كتب البداية ديال برية رسمية","Estimado señor García:"],["¿Cómo terminas un correo formal?","كيفاش كتسالي إيميل رسمي؟","Le saluda atentamente, Ahmed."]]
+};
+
+/* ============ تصاور الكلمات (لتمرين «شنو سمية هادي؟») ============ */
+const PICS = {
+  uno: "1", dos: "2", tres: "3", cinco: "5", diez: "10", once: "11", doce: "12", quince: "15", veinte: "20", treinta: "30", cincuenta: "50", cien: "100", mil: "1000",
+  "c13:rojo": "🟥", "c13:azul": "🟦", "c13:verde": "🟩", "c13:amarillo": "🟨", "c13:negro": "⬛", "c13:blanco": "⬜", "c13:marrón": "🟫", "c13:naranja": "🟧", "c13:morado": "🟪",
+  ojo: "👁️", nariz: "👃", boca: "👄", oreja: "👂", mano: "✋", brazo: "💪", pierna: "🦵", pie: "🦶",
+  pan: "🍞", agua: "💧", leche: "🥛", pollo: "🍗", carne: "🥩", pescado: "🐟", huevo: "🥚", queso: "🧀", arroz: "🍚", "té": "🍵",
+  manzana: "🍎", "plátano": "🍌", naranja: "🍊", uvas: "🍇", fresa: "🍓", "sandía": "🍉", tomate: "🍅", patata: "🥔", cebolla: "🧅", zanahoria: "🥕", lechuga: "🥬", pimiento: "🫑",
+  cocina: "🍳", dormitorio: "🛏️", "salón": "🛋️", "baño": "🚿", ventana: "🪟", puerta: "🚪", "jardín": "🌳", escalera: "🪜",
+  camisa: "👔", camiseta: "👕", pantalones: "👖", vestido: "👗", zapatos: "👞", chaqueta: "🧥", calcetines: "🧦", gorra: "🧢",
+  libro: "📕", cuaderno: "📓", "bolígrafo": "🖊️", "lápiz": "✏️", mochila: "🎒", silla: "🪑", examen: "📝",
+  banco: "🏦", hospital: "🏥", farmacia: "💊", supermercado: "🛒", "estación": "🚉", aeropuerto: "✈️", parque: "🏞️", mezquita: "🕌", restaurante: "🍽️",
+  perro: "🐕", gato: "🐈", caballo: "🐎", vaca: "🐄", oveja: "🐑", cabra: "🐐", "pájaro": "🐦", pez: "🐠", burro: "🫏", gallina: "🐔", "león": "🦁", camello: "🐪",
+  "fútbol": "⚽", baloncesto: "🏀", tenis: "🎾", "natación": "🏊", correr: "🏃", gimnasio: "🏋️",
+  primavera: "🌷", verano: "☀️", "otoño": "🍂", invierno: "❄️", "hace calor": "🥵", "hace frío": "🥶", llueve: "🌧️", nieva: "🌨️", "hace sol": "🌞", "hace viento": "💨",
+  "médico": "🧑‍⚕️", profesor: "🧑‍🏫", cocinero: "🧑‍🍳", "policía": "👮", "mecánico": "🧑‍🔧",
+  regalo: "🎁", fiesta: "🎉", "cumpleaños": "🎂", boda: "💍", playa: "🏖️",
+  leer: "📖", "ver la tele": "📺", "escuchar música": "🎧", dibujar: "🎨", bailar: "💃", cine: "🎬",
+  barrer: "🧹", "sacar la basura": "🗑️", "hacer la cama": "🛏️",
+  Marruecos: "🇲🇦", "España": "🇪🇸", Francia: "🇫🇷", Alemania: "🇩🇪", "Estados Unidos": "🇺🇸"
+};
+const picFor = (l, es) => { const k = es.replace(/^(el|la|los|las)\s+/i, ""); return PICS[l.id + ":" + k] || PICS[k] || null; };
+
 /* ============ التخزين ============ */
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
@@ -528,6 +647,71 @@ function speak(t) {
 const allLessons = () => LESSONS.concat(mine);
 const lessonsOf = lv => allLessons().filter(l => l.level === lv);
 const findLesson = id => allLessons().find(l => l.id === id);
+const asksOf = l => l.ask || ASK[l.id] || [];
+const KEYS = ["á", "é", "í", "ó", "ú", "ñ", "ü", "¿", "¡"];
+const keysHTML = target => `<div class="keys" aria-label="حروف إسبانية">${KEYS.map(k => `<button type="button" class="key" data-act="key" data-k="${k}" data-target="${target}">${k}</button>`).join("")}</div>`;
+
+/* ============ التصحيح ============ */
+const deacc = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+const clean = s => s.toLowerCase().replace(/[¿?¡!.,;:«»"()]/g, " ").replace(/\s+/g, " ").trim();
+const noArt = s => s.replace(/^(el|la|los|las|un|una|unos|unas)\s+/, "");
+function lev(a, b) {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[a.length][b.length];
+}
+function judge(input, expected) {
+  const a = clean(input), e = clean(expected);
+  if (a === e) return { ok: true };
+  if (noArt(a) === noArt(e)) return { ok: true, note: "article" };
+  if (deacc(a) === deacc(e) || deacc(noArt(a)) === deacc(noArt(e))) return { ok: true, note: "accent" };
+  const dist = lev(deacc(noArt(a)), deacc(noArt(e)));
+  return { ok: false, near: dist <= (e.length > 6 ? 2 : 1) };
+}
+// كيلون فالجواب الصحيح الحروف اللي غلطتي فيهم ولا نسيتيهم
+function diffHTML(input, expected) {
+  const a = [...clean(input)], e = [...expected];
+  const el = e.map(c => c.toLowerCase());
+  const L = Array.from({ length: e.length + 1 }, () => new Array(a.length + 1).fill(0));
+  for (let i = e.length - 1; i >= 0; i--) for (let j = a.length - 1; j >= 0; j--)
+    L[i][j] = el[i] === a[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  let i = 0, j = 0, out = "";
+  while (i < e.length) {
+    if (j < a.length && el[i] === a[j]) { out += esc(e[i]); i++; j++; }
+    else if (j < a.length && L[i][j + 1] >= L[i + 1][j]) j++;
+    else { out += /[\s¿?¡!.,]/.test(e[i]) ? esc(e[i]) : `<mark>${esc(e[i])}</mark>`; i++; }
+  }
+  return out;
+}
+
+/* ============ Claude (الأستاذ اللي كيصحح) ============ */
+let sampleFn = null, aiState = "pending";
+(async () => {
+  await null; // نخليو السكريبت يكمل الأول
+  try { sampleFn = (window.claude && await window.claude.use("sample")) || null; } catch (e) { sampleFn = null; }
+  aiState = sampleFn ? "on" : "off";
+  if (view.name === "lesson") render();
+})();
+const AI_OFF_CODES = ["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"];
+function aiErrorText(e) {
+  if (AI_OFF_CODES.includes(e && e.code)) { aiState = "off"; return "التصحيح الأوتوماتيكي ما خدامش هنا. كيخدم ملي كتحل التطبيق من Claude وكتقبل الطلب."; }
+  if (e && e.code === "rate_limited") return "صيفطتي بزاف دالمرات. تسنى شوية وعاود.";
+  return "وقع مشكل فالاتصال. عاود صيفط.";
+}
+const levelName = l => { const lv = LEVELS.find(x => x.id === l.level); return `${l.level} (${lv ? lv.name : ""})`; };
+
+async function aiCheckAnswer(lesson, q, answer) {
+  const prompt = `You are a friendly Spanish teacher for a Moroccan learner (CEFR level ${levelName(lesson)}). Lesson topic: "${lesson.es}".
+The learner was asked, in Spanish: "${q.q}"
+Instruction they saw (Darija): "${q.hint}"
+The learner answered: "${answer}"
+Judge whether the answer is correct, grammatical Spanish AND a sensible answer to the question. Any true personal content is fine (their own name, city, tastes). Ignore missing capital letters and missing ¿ ¡ marks. A missing accent mark is a small mistake: still ok=true but mention it in the tip.
+Reply with ONLY a JSON object:
+{"ok": boolean, "corrected": "the learner's answer rewritten as correct, natural Spanish keeping their meaning (same text if already correct)", "tip": "one or two short sentences in Moroccan Darija written in Arabic script: say what was wrong and why, or praise them if correct. Max 30 words."}`;
+  return sampleFn.json(prompt, { modelTier: "quick" });
+}
 
 /* ============ الدروس ديالك (من الفيديو) ============ */
 function parseMine(text) {
@@ -558,18 +742,27 @@ function makeQuiz(lesson) {
   const pool = (lesson.vocab || []).concat(sameLevel);
   const pick = (field, not) => shuffle(uniq(pool.map(p => p[field]).filter(x => x !== not))).slice(0, 3);
   const v = shuffle((lesson.vocab || []).slice());
+  const withPic = v.filter(x => picFor(lesson, x[0]));
+  const noPic = v.filter(x => !picFor(lesson, x[0]));
   const qs = [];
-  const nFwd = v.length <= 4 ? v.length : 4;
-  v.slice(0, nFwd).forEach(([es, ar]) => qs.push({ type: "mcq", kind: "شنو معنى هاد الكلمة؟", q: es, qEs: true, answer: ar, options: shuffle([ar, ...pick(1, ar)]), optEs: false }));
-  (v.length <= 4 ? v : v.slice(4, 7)).forEach(([es, ar]) => qs.push({ type: "mcq", kind: "كيفاش كتقولها بالإسبانية؟", q: ar, qEs: false, answer: es, options: shuffle([es, ...pick(0, es)]), optEs: true }));
-  (lesson.fill || []).forEach(([s, a, d]) => qs.push({ type: "fill", kind: "عمّر الفراغ", q: s, answer: a, options: shuffle([a, ...d]), optEs: true }));
-  (lesson.build || []).forEach(([es, ar]) => qs.push({ type: "build", kind: "رتب الكلمات باش تكتب الجملة", q: ar, answer: es, tokens: shuffle(es.split(/\s+/).map((t, i) => ({ t, i }))) }));
-  return shuffle(qs).slice(0, 12);
+  // الكتابة: شوف التصويرة وكتب السمية / كتب بالإسبانية / سمع وكتب
+  withPic.slice(0, 3).forEach(([es, ar]) => qs.push({ type: "name", kind: "شنو سمية هادي بالإسبانية؟", pic: picFor(lesson, es), answer: es, ar }));
+  noPic.slice(0, withPic.length >= 3 ? 1 : 3 - withPic.length).forEach(([es, ar]) => qs.push({ type: "type", kind: "كتب هادي بالإسبانية", q: ar, answer: es, ar }));
+  const listenSrc = shuffle((lesson.build || []).concat(v.slice(0, 3)))[0];
+  if (listenSrc) qs.push({ type: "listen", kind: "سمع وكتب اللي سمعتي", answer: listenSrc[0], ar: listenSrc[1] });
+  // الاختيار
+  v.slice(0, 2).forEach(([es, ar]) => qs.push({ type: "mcq", kind: "شنو معنى هاد الكلمة؟", q: es, qEs: true, answer: ar, options: shuffle([ar, ...pick(1, ar)]), optEs: false }));
+  shuffle((lesson.fill || []).slice()).slice(0, 2).forEach(([s, a, d]) => qs.push({ type: "fill", kind: "عمّر الفراغ", q: s, answer: a, options: shuffle([a, ...d]), optEs: true }));
+  shuffle((lesson.build || []).slice()).slice(0, 1).forEach(([es, ar]) => qs.push({ type: "build", kind: "رتب الكلمات باش تكتب الجملة", q: ar, answer: es, tokens: shuffle(es.split(/\s+/).map((t, i) => ({ t, i }))) }));
+  const main = shuffle(qs).slice(0, 10);
+  // فالخر: جاوب على سؤال بحال فالهضرة
+  asksOf(lesson).forEach(([q, hint, example]) => main.push({ type: "ask", kind: "جاوب على السؤال بجملة كاملة", q, hint, example }));
+  return main;
 }
 
 /* ============ الحالة ============ */
 let view = { name: "home" };
-let quiz = null, cards = null, pendingDelete = null;
+let quiz = null, cards = null, chat = null, pendingDelete = null;
 
 function go(v) { view = v; render(); window.scrollTo(0, 0); }
 
@@ -616,17 +809,54 @@ function renderLesson(l) {
   <div class="actions">
     <button class="btn" data-act="quiz" data-id="${l.id}" ${hasEx ? "" : "disabled"}>تمرّن</button>
     <button class="btn ghost" data-act="cards" data-id="${l.id}" ${(l.vocab || []).length ? "" : "disabled"}>بطاقات المراجعة</button>
+    ${aiState !== "off" ? `<button class="btn talk" data-act="chat" data-id="${l.id}"><span>هضر مع الأستاذ بالإسبانية</span><small>كيسولك، كتجاوب، وكيصحح ليك</small></button>` : ""}
   </div>
   ${(l.vocab || []).length ? `<h3 class="sec">الكلمات</h3><div class="vocab">${l.vocab.map(([es, ar]) => `<div class="vrow"><button class="say" data-act="say" data-t="${esc(es)}" aria-label="سمع ${esc(es)}">${SPEAK}</button><span class="es" lang="es">${esc(es)}</span><span class="ar">${esc(ar)}</span></div>`).join("")}</div>` : ""}
   ${(l.build || []).length ? `<h3 class="sec" style="margin-top:20px">الجمل</h3><div class="vocab">${l.build.map(([es, ar]) => `<div class="vrow"><button class="say" data-act="say" data-t="${esc(es)}" aria-label="سمع الجملة">${SPEAK}</button><span class="es" lang="es">${esc(es)}</span><span class="ar">${esc(ar)}</span></div>`).join("")}</div>` : ""}
   ${l.mine ? `<div style="margin-top:18px;display:flex;gap:16px;flex-wrap:wrap"><button class="danger" style="color:var(--accent)" data-act="edit" data-id="${l.id}">بدّل الدرس</button><button class="danger" data-act="del" data-id="${l.id}">${pendingDelete === l.id ? "كليكي مرة أخرى باش تمسحو" : "مسح هاد الدرس"}</button></div>` : ""}`;
 }
 
+function typedFeedback(q) {
+  const j = quiz.verdict, said = quiz.typed || "";
+  const correct = `<b class="es" lang="es">${esc(q.answer)}</b>`;
+  const sayBtn = `<button class="say" data-act="say" data-t="${esc(q.answer)}" aria-label="سمع">${SPEAK}</button>`;
+  const meaning = q.ar && q.type !== "type" ? `<span class="hint">المعنى: ${esc(q.ar)}</span>` : "";
+  if (j.ok) {
+    const note = j.note === "article" ? `<span>صحيح! غير انتبه للأداة: ${correct}</span>`
+      : j.note === "accent" ? `<span>صحيح! غير انتبه للحروف (á é ñ...): ${correct}</span>` : "";
+    return `<b class="good-t">صحيح! مزيان</b>${note}<span class="row-say">${sayBtn}${correct}</span>${meaning}`;
+  }
+  const head = !said ? "هاهو الجواب" : j.near ? "قريبة! شوف فين الغلط" : "ماشي هي هادي";
+  return `<b class="bad-t">${head}</b>${said ? `<span>كتبتي: <span class="es" lang="es">${esc(said)}</span></span>` : ""}
+    <span class="row-say">${sayBtn}<b class="es diff" lang="es">${diffHTML(said, q.answer)}</b></span>${meaning}`;
+}
+
+function askFeedback(q) {
+  const r = quiz.ai;
+  if (quiz.checking) return `<div class="feedback wait" role="status"><b>الأستاذ كيصحح الجواب ديالك...</b></div>`;
+  if (r) {
+    const same = clean(r.corrected || "") === clean(quiz.typed || "");
+    return `<div class="feedback ${r.ok ? "good" : "bad"}" role="status">
+      <b class="${r.ok ? "good-t" : "bad-t"}">${r.ok ? "جواب مزيان!" : "كاين شي غلط صغير"}</b>
+      ${r.corrected && !same ? `<span>الصحيح:</span><span class="row-say"><button class="say" data-act="say" data-t="${esc(r.corrected)}" aria-label="سمع">${SPEAK}</button><b class="es diff" lang="es">${diffHTML(quiz.typed || "", r.corrected)}</b></span>` : ""}
+      ${r.tip ? `<span>${esc(r.tip)}</span>` : ""}
+      <button class="btn" data-act="next">${quiz.i === quiz.qs.length - 1 ? "شوف النتيجة" : "كمل"}</button></div>`;
+  }
+  // بلا Claude: قارن مع المثال وقرر بوحدك
+  return `<div class="feedback self" role="status">
+    ${quiz.aiMsg ? `<span class="hint">${esc(quiz.aiMsg)}</span>` : ""}
+    <span>قارن الجواب ديالك مع هاد المثال:</span>
+    <span class="row-say"><button class="say" data-act="say" data-t="${esc(q.example)}" aria-label="سمع">${SPEAK}</button><b class="es" lang="es">${esc(q.example)}</b></span>
+    ${quiz.answered ? `<button class="btn" data-act="next">${quiz.i === quiz.qs.length - 1 ? "شوف النتيجة" : "كمل"}</button>`
+      : `<div class="actions" style="margin:0"><button class="btn" data-act="self" data-ok="1">جاوبت صحيح</button><button class="btn ghost" data-act="self" data-ok="0">كان عندي غلط</button></div>`}</div>`;
+}
+
 function renderQuiz() {
   const q = quiz.qs[quiz.i];
   const n = quiz.qs.length;
   const progress = Math.round((quiz.i + (quiz.answered ? 1 : 0)) / n * 100);
-  let body = "";
+  const nextBtn = `<button class="btn" data-act="next">${quiz.i === n - 1 ? "شوف النتيجة" : "كمل"}</button>`;
+  let body = "", fb = "";
   if (q.type === "mcq" || q.type === "fill") {
     let prompt;
     if (q.type === "fill") {
@@ -640,18 +870,38 @@ function renderQuiz() {
       if (quiz.answered) { if (o === q.answer) cls = "right"; else if (i === quiz.picked) cls = "wrong"; }
       return `<button class="opt ${q.optEs ? "es" : ""} ${cls}" ${q.optEs ? 'lang="es"' : ""} data-act="pick" data-i="${i}" ${quiz.answered ? "disabled" : ""}>${esc(o)}</button>`;
     }).join("")}</div>`;
-  } else {
+    if (quiz.answered) fb = quiz.ok
+      ? `<div class="feedback good" role="status"><b class="good-t">صحيح! مزيان</b>${nextBtn}</div>`
+      : `<div class="feedback bad" role="status"><b class="bad-t">ماشي هي هادي</b><span>الجواب الصحيح: <b ${q.optEs === false ? "" : 'class="es" lang="es"'}>${esc(q.answer)}</b></span>${nextBtn}</div>`;
+  } else if (q.type === "build") {
     body = `<div class="prompt">${esc(q.q)}</div>
       <div class="slots" lang="es">${quiz.chosen.map((k, j) => `<button class="tok" data-act="untok" data-j="${j}" ${quiz.answered ? "disabled" : ""}>${esc(q.tokens[k].t)}</button>`).join("")}</div>
       <div class="bank" lang="es">${q.tokens.map((tk, k) => `<button class="tok ${quiz.chosen.includes(k) ? "used" : ""}" data-act="tok" data-k="${k}" ${quiz.answered ? "disabled" : ""}>${esc(tk.t)}</button>`).join("")}</div>
       ${quiz.answered ? "" : `<button class="btn check" data-act="checkbuild" ${quiz.chosen.length ? "" : "disabled"}>تأكد</button>`}`;
-  }
-  let fb = "";
-  if (quiz.answered) {
-    const last = quiz.i === n - 1;
-    fb = quiz.ok
-      ? `<div class="feedback good" role="status"><b class="good-t">صحيح! مزيان</b><button class="btn" data-act="next">${last ? "شوف النتيجة" : "كمل"}</button></div>`
-      : `<div class="feedback bad" role="status"><b class="bad-t">ماشي هي هادي</b><span>الجواب الصحيح: <b ${q.optEs === false ? "" : 'class="es" lang="es"'}>${esc(q.answer)}</b></span><button class="btn" data-act="next">${last ? "شوف النتيجة" : "كمل"}</button></div>`;
+    if (quiz.answered) fb = quiz.ok
+      ? `<div class="feedback good" role="status"><b class="good-t">صحيح! مزيان</b>${nextBtn}</div>`
+      : `<div class="feedback bad" role="status"><b class="bad-t">ماشي هي هادي</b><span>الجواب الصحيح: <b class="es" lang="es">${esc(q.answer)}</b></span>${nextBtn}</div>`;
+  } else if (q.type === "ask") {
+    const locked = quiz.answered || quiz.checking || quiz.selfPending;
+    body = `<div class="prompt es" lang="es"><button class="say" data-act="say" data-t="${esc(q.q)}" aria-label="سمع السؤال">${SPEAK}</button><span>${esc(q.q)}</span></div>
+      <p class="hint" style="margin:-12px 0 16px">${esc(q.hint)}</p>
+      <form class="answer-form" id="askForm">
+        <textarea id="ans" class="answer-input" rows="2" lang="es" dir="ltr" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="Escribe tu respuesta..." ${locked ? "disabled" : ""}>${esc(quiz.typed || "")}</textarea>
+        ${locked ? "" : keysHTML("ans") + `<button class="btn" type="submit">${aiState === "on" ? "صحح ليا" : "تأكد"}</button>`}
+      </form>`;
+    if (locked) fb = askFeedback(q);
+  } else {
+    // name / type / listen
+    let prompt = "";
+    if (q.type === "name") prompt = `<div class="pic ${/^\d+$/.test(q.pic) ? "num" : ""}" role="img" aria-label="تصويرة">${esc(q.pic)}</div>`;
+    else if (q.type === "type") prompt = `<div class="prompt">${esc(q.q)}</div>`;
+    else prompt = `<div class="listen"><button class="listen-btn" data-act="say" data-t="${esc(q.answer)}" aria-label="سمع">${SPEAK}</button><span class="hint">كليكي باش تسمع مرة أخرى</span></div>`;
+    const cls = quiz.answered ? (quiz.ok ? "right" : "wrong") : "";
+    body = prompt + `<form class="answer-form" id="typeForm">
+      <input id="ans" class="answer-input ${cls}" lang="es" dir="ltr" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="كتب هنا بالإسبانية..." value="${esc(quiz.typed || "")}" ${quiz.answered ? "disabled" : ""}>
+      ${quiz.answered ? "" : keysHTML("ans") + `<div class="actions" style="margin:0"><button class="btn" type="submit">تأكد</button><button class="btn ghost" type="button" data-act="giveup">ما عرفتش</button></div>`}
+    </form>`;
+    if (quiz.answered) fb = `<div class="feedback ${quiz.ok ? "good" : "bad"}" role="status">${typedFeedback(q)}${nextBtn}</div>`;
   }
   return `
   <div class="qtop"><button class="close" data-act="leave" aria-label="خرج">✕ خرج</button><span class="bar"><i style="width:${progress}%"></i></span><span class="count">${quiz.i + 1}/${n}</span></div>
@@ -695,6 +945,85 @@ function renderCards() {
   ${cards.flipped ? `<div class="actions"><button class="btn" data-act="know">عرفتها</button><button class="btn ghost" data-act="again">عاودها</button></div>` : ""}`;
 }
 
+/* ============ المحادثة مع الأستاذ ============ */
+function startChat(l) {
+  const a = asksOf(l)[0];
+  const opener = a
+    ? { es: `¡Hola! Vamos a practicar «${l.es}». ${a[0]}`, ar: `مرحبا! يالاه نتمرنو على «${l.ar}». ${a[1]}` }
+    : { es: `¡Hola! Vamos a practicar «${l.es}». ¿Cómo estás hoy?`, ar: `مرحبا! يالاه نتمرنو على «${l.ar}». كيداير اليوم؟` };
+  chat = { lesson: l, msgs: [{ role: "tutor", ...opener }], busy: false, note: "" };
+}
+
+function chatPrompt() {
+  const l = chat.lesson;
+  const words = (l.vocab || []).slice(0, 14).map(v => v[0]).join(", ");
+  const transcript = chat.msgs.slice(-12).map(m => m.role === "tutor" ? `Tutor: ${m.es}` : `Learner: ${m.text}`).join("\n");
+  const last = chat.msgs[chat.msgs.length - 1].text;
+  return `You are a warm, patient Spanish tutor having a written conversation with a Moroccan learner who speaks Darija.
+Learner's level: CEFR ${levelName(l)}. Today's lesson: "${l.es}" (${l.ar}). Useful words from the lesson: ${words}.
+Keep your Spanish simple and suited to that level. Stay on the lesson's topic, but follow the learner if they change subject.
+
+Conversation so far:
+${transcript}
+
+Now respond to the learner's latest message: "${last}"
+Reply with ONLY a JSON object:
+{"ok": true if the learner's latest message is correct Spanish (ignore capital letters and missing ¿ ¡), "corrected": "the learner's latest message rewritten as correct natural Spanish keeping their meaning; empty string if ok", "tip": "Moroccan Darija in Arabic script, max 30 words: if there were mistakes explain the main one simply; if correct, a short encouragement. If they wrote in Darija, Arabic or French, give them the Spanish in corrected and tell them to try in Spanish", "reply": "your next message in Spanish: react briefly to what they said, then ask ONE new simple question on the topic. Max 25 words", "reply_ar": "Darija translation of reply, in Arabic script"}`;
+}
+
+async function sendChat(text) {
+  if (!text.trim() || chat.busy) return;
+  const me = { role: "me", text: text.trim(), fix: null };
+  chat.msgs.push(me); chat.busy = true; chat.note = ""; chat.draft = "";
+  render();
+  try {
+    const r = await sampleFn.json(chatPrompt(), { modelTier: "quick", cache: false });
+    me.fix = { ok: !!r.ok, corrected: String(r.corrected || ""), tip: String(r.tip || "") };
+    if (r.reply) chat.msgs.push({ role: "tutor", es: String(r.reply), ar: String(r.reply_ar || "") });
+  } catch (e) {
+    chat.note = aiErrorText(e);
+  }
+  chat.busy = false;
+  if (view.name === "chat") render();
+}
+
+function renderChat() {
+  const l = chat.lesson;
+  const bubbles = chat.msgs.map((m, i) => {
+    if (m.role === "tutor") return `<div class="bubble tutor">
+      <p class="es" lang="es">${esc(m.es)}</p>
+      <div class="bubble-tools"><button class="say" data-act="say" data-t="${esc(m.es)}" aria-label="سمع">${SPEAK}</button>${m.ar ? `<button class="linkish" data-act="tr" data-i="${i}">${m.showAr ? "خبي الترجمة" : "الترجمة"}</button>` : ""}</div>
+      ${m.showAr ? `<p class="tr">${esc(m.ar)}</p>` : ""}</div>`;
+    let fix = "";
+    if (m.fix) {
+      const same = !m.fix.corrected || clean(m.fix.corrected) === clean(m.text);
+      fix = `<div class="fix ${m.fix.ok ? "good" : "bad"}">
+        <b>${m.fix.ok ? "✓ مزيان" : "✎ التصحيح"}</b>
+        ${!same ? `<span class="row-say"><button class="say" data-act="say" data-t="${esc(m.fix.corrected)}" aria-label="سمع">${SPEAK}</button><span class="es diff" lang="es">${diffHTML(m.text, m.fix.corrected)}</span></span>` : ""}
+        ${m.fix.tip ? `<span>${esc(m.fix.tip)}</span>` : ""}</div>`;
+    }
+    return `<div class="bubble me"><p class="es" lang="es">${esc(m.text)}</p></div>${fix}`;
+  }).join("");
+  const off = aiState === "off";
+  return `
+  <div class="qtop"><button class="close" data-act="open" data-id="${l.id}">✕ خرج</button><span class="chat-title"><b>الأستاذ</b> · <span class="es" lang="es">${esc(l.es)}</span></span></div>
+  <div class="chat">
+    ${bubbles}
+    ${chat.busy ? `<div class="bubble tutor typing"><span></span><span></span><span></span></div>` : ""}
+    ${chat.note ? `<p class="err">${esc(chat.note)}</p>` : ""}
+  </div>
+  <div class="composer">
+    <div class="composer-in">
+      ${off ? `<p class="hint">المحادثة كتحتاج Claude باش يصحح. حل التطبيق من Claude وقبل الطلب ملي يبان ليك.</p>` : `
+      ${keysHTML("chatIn")}
+      <form id="chatForm" class="chat-form">
+        <input id="chatIn" class="answer-input" lang="es" dir="ltr" autocomplete="off" autocapitalize="sentences" spellcheck="false" placeholder="Escribe en español..." ${chat.busy ? "disabled" : ""}>
+        <button class="btn" type="submit" ${chat.busy ? "disabled" : ""}>صيفط</button>
+      </form>`}
+    </div>
+  </div>`;
+}
+
 function renderAdd() {
   const ed = view.editId ? findLesson(view.editId) : null;
   const text = ed ? (ed.vocab || []).concat(ed.build || []).map(([a, b]) => `${a} = ${b}`).join("\n") : "";
@@ -722,14 +1051,26 @@ function renderAdd() {
 }
 
 function render() {
+  const draft = document.getElementById("chatIn");
+  if (draft && chat) chat.draft = draft.value;
   let html = "";
   if (view.name === "home") html = renderHome();
   else if (view.name === "lesson") { const l = findLesson(view.id); html = l ? renderLesson(l) : renderHome(); }
   else if (view.name === "quiz") html = renderQuiz();
   else if (view.name === "result") html = renderResult();
   else if (view.name === "cards") html = renderCards();
+  else if (view.name === "chat") html = renderChat();
   else if (view.name === "add") html = renderAdd();
   $app.innerHTML = html;
+  if (view.name === "chat") {
+    const inp = document.getElementById("chatIn");
+    if (inp) { inp.value = chat.draft || ""; if (!chat.busy) inp.focus({ preventScroll: true }); }
+    window.scrollTo(0, document.body.scrollHeight);
+  }
+  if (view.name === "quiz" && !quiz.answered && !quiz.checking) {
+    const a = document.getElementById("ans");
+    if (a && !a.disabled) a.focus({ preventScroll: true });
+  }
 }
 
 /* ============ الأحداث ============ */
@@ -740,9 +1081,45 @@ function finishAnswer(ok, q) {
     let es, ar;
     if (q.type === "mcq") { es = q.optEs ? q.answer : q.q; ar = q.optEs ? q.q : q.answer; }
     else if (q.type === "fill") { es = q.q.replace("___", q.answer); ar = "(" + q.answer + ")"; }
-    else { es = q.answer; ar = q.q; }
+    else if (q.type === "ask") { es = (quiz.ai && quiz.ai.corrected) || q.example; ar = q.hint; }
+    else if (q.type === "build") { es = q.answer; ar = q.q; }
+    else { es = q.answer; ar = q.ar || ""; }
     quiz.mistakes.push({ es, ar });
   }
+  render();
+}
+
+function nextQuestion() {
+  if (quiz.i < quiz.qs.length - 1) {
+    quiz.i++;
+    Object.assign(quiz, { answered: false, chosen: [], picked: null, typed: "", verdict: null, ai: null, aiMsg: "", checking: false, selfPending: false });
+    render(); window.scrollTo(0, 0);
+    const q = quiz.qs[quiz.i];
+    if (q.type === "listen") speak(q.answer);
+  } else {
+    const pct = Math.round(quiz.score / quiz.qs.length * 100);
+    scores[quiz.lesson.id] = Math.max(pct, scores[quiz.lesson.id] || 0); store.set("aula.scores", scores);
+    go({ name: "result" });
+  }
+}
+
+async function submitAsk(text) {
+  const q = quiz.qs[quiz.i];
+  quiz.typed = text;
+  if (aiState === "on") {
+    quiz.checking = true; render();
+    try {
+      const r = await aiCheckAnswer(quiz.lesson, q, text);
+      quiz.ai = { ok: !!r.ok, corrected: String(r.corrected || ""), tip: String(r.tip || "") };
+      quiz.checking = false;
+      finishAnswer(quiz.ai.ok, q);
+      return;
+    } catch (e) {
+      quiz.checking = false;
+      quiz.aiMsg = aiErrorText(e);
+    }
+  }
+  quiz.selfPending = true;
   render();
 }
 
@@ -758,20 +1135,28 @@ $app.addEventListener("click", e => {
     case "add": go({ name: "add" }); break;
     case "edit": go({ name: "add", editId: id }); break;
     case "say": speak(b.dataset.t); break;
-    case "quiz": { const l = findLesson(id); quiz = { lesson: l, qs: makeQuiz(l), i: 0, score: 0, answered: false, chosen: [], mistakes: [] }; go({ name: "quiz" }); break; }
+    case "key": {
+      const t = document.getElementById(b.dataset.target);
+      if (t && !t.disabled) { t.focus(); t.setRangeText(b.dataset.k, t.selectionStart, t.selectionEnd, "end"); }
+      break;
+    }
+    case "quiz": {
+      const l = findLesson(id);
+      quiz = { lesson: l, qs: makeQuiz(l), i: 0, score: 0, answered: false, chosen: [], mistakes: [], typed: "" };
+      go({ name: "quiz" });
+      if (quiz.qs[0] && quiz.qs[0].type === "listen") speak(quiz.qs[0].answer);
+      break;
+    }
     case "leave": go({ name: "lesson", id: quiz.lesson.id }); break;
     case "pick": { const q = quiz.qs[quiz.i]; quiz.picked = +b.dataset.i; finishAnswer(q.options[quiz.picked] === q.answer, q); break; }
     case "tok": quiz.chosen.push(+b.dataset.k); render(); break;
     case "untok": quiz.chosen.splice(+b.dataset.j, 1); render(); break;
     case "checkbuild": { const q = quiz.qs[quiz.i]; const said = quiz.chosen.map(k => q.tokens[k].t).join(" "); finishAnswer(said === q.answer, q); break; }
-    case "next":
-      if (quiz.i < quiz.qs.length - 1) { quiz.i++; quiz.answered = false; quiz.chosen = []; quiz.picked = null; render(); window.scrollTo(0, 0); }
-      else {
-        const pct = Math.round(quiz.score / quiz.qs.length * 100);
-        scores[quiz.lesson.id] = Math.max(pct, scores[quiz.lesson.id] || 0); store.set("aula.scores", scores);
-        go({ name: "result" });
-      }
-      break;
+    case "giveup": { const q = quiz.qs[quiz.i]; quiz.typed = ""; quiz.verdict = { ok: false }; finishAnswer(false, q); break; }
+    case "self": { const q = quiz.qs[quiz.i]; quiz.selfPending = false; finishAnswer(b.dataset.ok === "1", q); break; }
+    case "next": nextQuestion(); break;
+    case "chat": startChat(findLesson(id)); go({ name: "chat" }); break;
+    case "tr": { const m = chat.msgs[+b.dataset.i]; m.showAr = !m.showAr; render(); break; }
     case "cards": { const l = findLesson(id); cards = { lesson: l, queue: shuffle(l.vocab.slice()), total: l.vocab.length, flipped: false }; go({ name: "cards" }); break; }
     case "flip": if (!cards.flipped) { cards.flipped = true; speak(cards.queue[0][0]); render(); } break;
     case "know": cards.queue.shift(); cards.flipped = false; render(); break;
@@ -785,8 +1170,35 @@ $app.addEventListener("click", e => {
   }
 });
 
+$app.addEventListener("keydown", e => {
+  // Enter كيصيفط الجواب حتى فالخانة ديال السؤال (Shift+Enter = سطر جديد)
+  if (e.key === "Enter" && !e.shiftKey && e.target.id === "ans" && e.target.tagName === "TEXTAREA") {
+    e.preventDefault(); e.target.form.requestSubmit();
+  }
+});
+
 $app.addEventListener("submit", e => {
   e.preventDefault();
+  const form = e.target;
+  if (form.id === "typeForm") {
+    const val = document.getElementById("ans").value;
+    if (!val.trim()) return;
+    const q = quiz.qs[quiz.i];
+    quiz.typed = val; quiz.verdict = judge(val, q.answer);
+    finishAnswer(quiz.verdict.ok, q);
+    return;
+  }
+  if (form.id === "askForm") {
+    const val = document.getElementById("ans").value;
+    if (val.trim()) submitAsk(val.trim());
+    return;
+  }
+  if (form.id === "chatForm") {
+    const inp = document.getElementById("chatIn");
+    const val = inp.value; inp.value = "";
+    sendChat(val);
+    return;
+  }
   const err = document.getElementById("f-err");
   const title = document.getElementById("f-title").value.trim();
   const ar = document.getElementById("f-ar").value.trim();
