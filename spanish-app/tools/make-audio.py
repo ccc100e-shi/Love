@@ -1,16 +1,15 @@
 """كيسجل الصوت الإسباني ديال التطبيق وكيجمعو فملفات mp3.
 
-الصوت: نموذج VITS ديال Coqui مدرب على CSS10 الإسباني (القارئ «tux» من سبانيا)،
-باش النطق يكون castellano صحيح.
+الصوت: Piper es_ES-davefx-medium (صوت ديال سبانيا، castellano) عبر sherpa-onnx.
+اخترناه حيت Whisper فهم المقاطع ديالو أحسن من الأصوات الأخرى (3% غلط فقط).
 
 الاستعمال:
-    pip install coqui-tts torchcodec num2words imageio-ffmpeg
+    pip install sherpa-onnx num2words imageio-ffmpeg soundfile
     node tools/list-audio.js > /tmp/audio-list.json
     python3 tools/make-audio.py /tmp/audio-list.json MODEL_DIR CACHE_DIR
 
-MODEL_DIR فيه model_file.pth.tar و config.json ديال
-https://github.com/coqui-ai/TTS/releases/download/v0.8.0_models/tts_models--es--css10--vits.zip
-(بدل فـ config.json الطريق ديال speaker_ids.json باش يشير للملف اللي حداه).
+MODEL_DIR = vits-piper-es_ES-davefx-medium من
+https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-es_ES-davefx-medium.tar.bz2
 كيكتب audio/*.mp3 و audio/manifest.json حدا index.html.
 """
 import hashlib
@@ -24,8 +23,8 @@ from multiprocessing import Pool
 import numpy as np
 import soundfile as sf
 
-VOICE = "css10-tux"
-SPEED = {"n": 1.0, "s": 1.35}  # length_scale: عادي / بشوية
+VOICE = "piper-es_ES-davefx-medium"
+SPEED = {"n": 0.95, "s": 0.72}  # عادي / بشوية
 SR = 22050
 PAD_BEFORE, PAD_AFTER = 0.15, 0.35
 
@@ -58,14 +57,15 @@ def synth(job):
     if os.path.exists(path):
         return
     if _k is None:
-        import torch
-        from TTS.utils.synthesizer import Synthesizer
-        torch.set_num_threads(1)  # 4 عمليات × خيط واحد، باش ما يتزاحموش على المعالج
-        _k = Synthesizer(tts_checkpoint=os.path.join(model_dir, "model_file.pth.tar"),
-                         tts_config_path=os.path.join(model_dir, "config.json"), use_cuda=False)
-    _k.tts_model.length_scale = SPEED[mode]
-    samples = np.array(_k.tts(spoken(text), speaker_name="tux"), dtype="float32")
-    sr = _k.output_sample_rate
+        import sherpa_onnx
+        name = os.path.basename(os.path.normpath(model_dir))[len("vits-piper-"):]
+        _k = sherpa_onnx.OfflineTts(sherpa_onnx.OfflineTtsConfig(model=sherpa_onnx.OfflineTtsModelConfig(
+            vits=sherpa_onnx.OfflineTtsVitsModelConfig(model=os.path.join(model_dir, name + ".onnx"),
+                                                       tokens=os.path.join(model_dir, "tokens.txt"),
+                                                       data_dir=os.path.join(model_dir, "espeak-ng-data")),
+            num_threads=1)))  # 4 عمليات × خيط واحد
+    out = _k.generate(spoken(text), sid=0, speed=SPEED[mode])
+    samples, sr = np.array(out.samples, dtype="float32"), out.sample_rate
     assert sr == SR
     sf.write(path, samples, sr)
 
