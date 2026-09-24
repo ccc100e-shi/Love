@@ -1,11 +1,16 @@
-"""كيسجل الصوت الإسباني ديال التطبيق بـ Kokoro (صوت ef_dora) وكيجمعو فملفات mp3.
+"""كيسجل الصوت الإسباني ديال التطبيق وكيجمعو فملفات mp3.
+
+الصوت: نموذج VITS ديال Coqui مدرب على CSS10 الإسباني (القارئ «tux» من سبانيا)،
+باش النطق يكون castellano صحيح.
 
 الاستعمال:
+    pip install coqui-tts torchcodec num2words imageio-ffmpeg
     node tools/list-audio.js > /tmp/audio-list.json
     python3 tools/make-audio.py /tmp/audio-list.json MODEL_DIR CACHE_DIR
 
-MODEL_DIR فيه kokoro-v1.0.onnx و voices-v1.0.bin
-(https://github.com/thewh1teagle/kokoro-onnx/releases/tag/model-files-v1.0).
+MODEL_DIR فيه model_file.pth.tar و config.json ديال
+https://github.com/coqui-ai/TTS/releases/download/v0.8.0_models/tts_models--es--css10--vits.zip
+(بدل فـ config.json الطريق ديال speaker_ids.json باش يشير للملف اللي حداه).
 كيكتب audio/*.mp3 و audio/manifest.json حدا index.html.
 """
 import hashlib
@@ -19,9 +24,9 @@ from multiprocessing import Pool
 import numpy as np
 import soundfile as sf
 
-VOICE = "ef_dora"
-SPEED = {"n": 0.92, "s": 0.72}  # عادي / بشوية
-SR = 24000
+VOICE = "css10-tux"
+SPEED = {"n": 1.0, "s": 1.35}  # length_scale: عادي / بشوية
+SR = 22050
 PAD_BEFORE, PAD_AFTER = 0.15, 0.35
 
 list_path, model_dir, cache_dir = sys.argv[1:4]
@@ -31,7 +36,9 @@ os.makedirs(out_dir, exist_ok=True)
 
 
 def spoken(text):
+    from num2words import num2words
     t = re.sub(r"\([^)]*\)", "", text)
+    t = re.sub(r"\d+", lambda m: num2words(int(m.group()), lang="es"), t)
     t = t.replace("—", "").replace("€", " euros").replace("___", "")
     return re.sub(r"\s+", " ", t).strip()
 
@@ -51,14 +58,14 @@ def synth(job):
     if os.path.exists(path):
         return
     if _k is None:
-        import onnxruntime as ort
-        from kokoro_onnx import Kokoro
-        opts = ort.SessionOptions()
-        opts.intra_op_num_threads = 1  # 4 عمليات × خيط واحد، باش ما يتزاحموش على المعالج
-        opts.inter_op_num_threads = 1
-        sess = ort.InferenceSession(os.path.join(model_dir, "kokoro-v1.0.onnx"), opts, providers=["CPUExecutionProvider"])
-        _k = Kokoro.from_session(sess, os.path.join(model_dir, "voices-v1.0.bin"))
-    samples, sr = _k.create(spoken(text), voice=VOICE, speed=SPEED[mode], lang="es")
+        import torch
+        from TTS.utils.synthesizer import Synthesizer
+        torch.set_num_threads(1)  # 4 عمليات × خيط واحد، باش ما يتزاحموش على المعالج
+        _k = Synthesizer(tts_checkpoint=os.path.join(model_dir, "model_file.pth.tar"),
+                         tts_config_path=os.path.join(model_dir, "config.json"), use_cuda=False)
+    _k.tts_model.length_scale = SPEED[mode]
+    samples = np.array(_k.tts(spoken(text), speaker_name="tux"), dtype="float32")
+    sr = _k.output_sample_rate
     assert sr == SR
     sf.write(path, samples, sr)
 
