@@ -1,15 +1,16 @@
 """كيسجل الصوت الإسباني ديال التطبيق وكيجمعو فملفات mp3.
 
-الصوت: Piper es_ES-davefx-medium (صوت ديال سبانيا، castellano) عبر sherpa-onnx.
-اخترناه حيت Whisper فهم المقاطع ديالو أحسن من الأصوات الأخرى (3% غلط فقط).
+الصوت: Piper es_ES-sharvard-medium، المتكلم M (صوت ديال سبانيا، castellano) عبر sherpa-onnx.
+اخترناه بعد ما قارنا الأصوات بـ Whisper: أحسن واحد فالجمل (5.5% غلط) وفالكلمات بوحدها.
+الكلمات القصيرة (كلمة ولا جوج) كتتقال بشوية وبنقطة فالخر باش تكون واضحة.
 
 الاستعمال:
     pip install sherpa-onnx num2words imageio-ffmpeg soundfile
     node tools/list-audio.js > /tmp/audio-list.json
     python3 tools/make-audio.py /tmp/audio-list.json MODEL_DIR CACHE_DIR
 
-MODEL_DIR = vits-piper-es_ES-davefx-medium من
-https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-es_ES-davefx-medium.tar.bz2
+MODEL_DIR = vits-piper-es_ES-sharvard-medium من
+https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-es_ES-sharvard-medium.tar.bz2
 كيكتب audio/*.mp3 و audio/manifest.json حدا index.html.
 """
 import hashlib
@@ -23,8 +24,9 @@ from multiprocessing import Pool
 import numpy as np
 import soundfile as sf
 
-VOICE = "piper-es_ES-davefx-medium"
-SPEED = {"n": 0.95, "s": 0.72}  # عادي / بشوية
+VOICE = "piper-es_ES-sharvard-medium-M"
+SPEAKER = 0  # M
+LENGTH = {"n": 1.05, "s": 1.45, "w": 1.2}  # جملة عادية / بشوية / كلمة بوحدها
 SR = 22050
 PAD_BEFORE, PAD_AFTER = 0.15, 0.35
 
@@ -42,8 +44,17 @@ def spoken(text):
     return re.sub(r"\s+", " ", t).strip()
 
 
+def kind(text, mode):
+    return "w" if mode == "n" and len(spoken(text).split()) <= 2 else mode
+
+
+def spoken_for(text, mode):
+    t = spoken(text)
+    return t.rstrip(".") + "." if kind(text, mode) == "w" and not re.search(r"[?!.]$", t) else t
+
+
 def cache_file(text, mode):
-    h = hashlib.sha1(f"{VOICE}|{SPEED[mode]}|{spoken(text)}".encode()).hexdigest()[:16]
+    h = hashlib.sha1(f"{VOICE}|{kind(text, mode)}|{spoken_for(text, mode)}".encode()).hexdigest()[:16]
     return os.path.join(cache_dir, f"{h}.wav")
 
 
@@ -59,12 +70,13 @@ def synth(job):
     if _k is None:
         import sherpa_onnx
         name = os.path.basename(os.path.normpath(model_dir))[len("vits-piper-"):]
-        _k = sherpa_onnx.OfflineTts(sherpa_onnx.OfflineTtsConfig(model=sherpa_onnx.OfflineTtsModelConfig(
+        _k = {k: sherpa_onnx.OfflineTts(sherpa_onnx.OfflineTtsConfig(model=sherpa_onnx.OfflineTtsModelConfig(
             vits=sherpa_onnx.OfflineTtsVitsModelConfig(model=os.path.join(model_dir, name + ".onnx"),
                                                        tokens=os.path.join(model_dir, "tokens.txt"),
-                                                       data_dir=os.path.join(model_dir, "espeak-ng-data")),
-            num_threads=1)))  # 4 عمليات × خيط واحد
-    out = _k.generate(spoken(text), sid=0, speed=SPEED[mode])
+                                                       data_dir=os.path.join(model_dir, "espeak-ng-data"),
+                                                       length_scale=ls),
+            num_threads=1))) for k, ls in LENGTH.items()}  # 4 عمليات × خيط واحد
+    out = _k[kind(text, mode)].generate(spoken_for(text, mode), sid=SPEAKER)
     samples, sr = np.array(out.samples, dtype="float32"), out.sample_rate
     assert sr == SR
     sf.write(path, samples, sr)
