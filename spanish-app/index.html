@@ -1,0 +1,805 @@
+<title>Aula de Español</title>
+<meta name="description" content="تمارين الإسبانية من A1 حتى C1، بالشرح بالدارجة">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Readex+Pro:wght@300;400;500;600&display=swap">
+<style>
+:root {
+  --bg: #EEF2F8;
+  --surface: #FFFFFF;
+  --surface-2: #E4EAF4;
+  --ink: #14213D;
+  --muted: #5B6B85;
+  --line: #D3DCE9;
+  --accent: #1F4FA8;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #DCE6F8;
+  --sun: #E8A817;
+  --sun-soft: #FCEFCB;
+  --good: #1B7F52;
+  --good-soft: #D6F0E2;
+  --bad: #B83A33;
+  --bad-soft: #F8DCDA;
+  --radius: 14px;
+  --display: "Bricolage Grotesque", "Readex Pro", system-ui, sans-serif;
+  --body: "Readex Pro", "Segoe UI", Tahoma, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0D1422; --surface: #16203A; --surface-2: #1D2946; --ink: #E7EDF8; --muted: #98A8C3;
+    --line: #283655; --accent: #86A9F2; --accent-ink: #0D1422; --accent-soft: #22335A;
+    --sun: #F2C14E; --sun-soft: #3A3120; --good: #5BC994; --good-soft: #173A2B; --bad: #F08A83; --bad-soft: #43201F;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0D1422; --surface: #16203A; --surface-2: #1D2946; --ink: #E7EDF8; --muted: #98A8C3;
+  --line: #283655; --accent: #86A9F2; --accent-ink: #0D1422; --accent-soft: #22335A;
+  --sun: #F2C14E; --sun-soft: #3A3120; --good: #5BC994; --good-soft: #173A2B; --bad: #F08A83; --bad-soft: #43201F;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); }
+body {
+  color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.65;
+  padding-inline: 16px; padding-block: 0 48px;
+}
+#app { max-width: 680px; margin-inline: auto; }
+.es { font-family: var(--display); direction: ltr; unicode-bidi: isolate; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.25; }
+
+/* header */
+.top { padding-block: 28px 18px; display: flex; flex-direction: column; gap: 6px; }
+.brand { font-family: var(--display); font-weight: 800; font-size: clamp(30px, 8vw, 42px); letter-spacing: -0.02em; direction: ltr; text-align: right; }
+.brand .mark { color: var(--sun); }
+.sub { color: var(--muted); margin: 0; }
+.meter { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 14px; color: var(--muted); }
+.meter .bar { flex: 1; height: 6px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+.meter .bar i { display: block; height: 100%; background: var(--sun); border-radius: 99px; }
+
+/* levels */
+.levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; direction: ltr; margin-block: 8px 20px; }
+.lvl { background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--radius); padding: 10px 4px 8px; display: flex; flex-direction: column; align-items: center; gap: 0; }
+.lvl b { font-family: var(--display); font-size: 22px; font-weight: 800; line-height: 1.1; }
+.lvl span { font-family: var(--display); font-size: 12px; color: var(--muted); }
+.lvl[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.lvl[aria-pressed="true"] span { color: var(--accent-ink); opacity: .85; }
+.lvl-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+.lvl-head h2 { font-size: 20px; font-weight: 600; }
+.lvl-head small { color: var(--muted); font-size: 13px; }
+
+/* lesson list */
+.list { display: flex; flex-direction: column; gap: 8px; }
+.row { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 12px; text-align: right; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; width: 100%; }
+.row:hover { border-color: var(--accent); }
+.num { font-family: var(--display); font-weight: 700; color: var(--accent); font-size: 18px; text-align: center; font-variant-numeric: tabular-nums; }
+.row .t { display: flex; flex-direction: column; min-width: 0; }
+.row .t .es { font-weight: 700; font-size: 17px; text-align: right; }
+.row .t small { color: var(--muted); font-size: 13.5px; }
+.pill { font-size: 12.5px; padding: 3px 10px; border-radius: 99px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pill.new { background: var(--surface-2); color: var(--muted); }
+.pill.ok { background: var(--good-soft); color: var(--good); }
+.pill.mid { background: var(--sun-soft); color: var(--ink); }
+.row.mine .num { color: var(--sun); }
+.add-row { margin-top: 14px; border: 1.5px dashed var(--line); background: transparent; border-radius: var(--radius); padding: 14px; width: 100%; display: flex; flex-direction: column; gap: 2px; text-align: right; }
+.add-row b { color: var(--accent); font-weight: 600; }
+.add-row small { color: var(--muted); }
+
+/* generic */
+.back { background: none; border: 0; color: var(--muted); padding: 22px 0 8px; font-size: 15px; }
+.back:hover { color: var(--accent); }
+.eyebrow { font-family: var(--display); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); direction: ltr; text-align: right; }
+.lesson-title { font-family: var(--display); font-size: clamp(26px, 7vw, 34px); font-weight: 800; letter-spacing: -0.01em; direction: ltr; text-align: right; }
+.lesson-ar { color: var(--muted); margin: 2px 0 18px; }
+.tg { display: inline-block; margin: -8px 0 16px; color: var(--accent); font-weight: 500; font-size: 15px; text-decoration: none; border-bottom: 1.5px solid var(--accent-soft); }
+.tg:hover { border-bottom-color: var(--accent); }
+.note { background: var(--sun-soft); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+.note h3 { font-size: 15px; font-weight: 600; }
+.note p { margin: 0; }
+.note .es { font-weight: 700; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px; }
+.btn { border: 0; border-radius: 12px; padding: 13px 16px; font-weight: 600; background: var(--accent); color: var(--accent-ink); }
+.btn.ghost { background: var(--surface); color: var(--ink); border: 1.5px solid var(--line); }
+.btn:disabled { opacity: .45; cursor: default; }
+h3.sec { font-size: 15px; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
+.vocab { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.vrow { display: grid; grid-template-columns: 40px 1fr 1fr; align-items: center; gap: 10px; padding: 9px 12px; border-top: 1px solid var(--line); }
+.vrow:first-child { border-top: 0; }
+.vrow .es { font-weight: 600; text-align: left; }
+.vrow .ar { color: var(--muted); font-size: 15px; }
+.say { width: 32px; height: 32px; border-radius: 99px; border: 0; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
+.say svg { width: 16px; height: 16px; }
+
+/* quiz */
+.qtop { display: flex; align-items: center; gap: 12px; padding-block: 22px 18px; }
+.qtop .close { background: none; border: 0; color: var(--muted); font-size: 15px; padding: 0; }
+.qtop .bar { flex: 1; height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+.qtop .bar i { display: block; height: 100%; background: var(--accent); transition: width .3s; }
+.qtop .count { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; direction: ltr; }
+.kind { color: var(--muted); font-size: 14px; margin-bottom: 6px; }
+.prompt { font-size: clamp(22px, 6vw, 28px); font-weight: 700; margin-bottom: 22px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.prompt.es { justify-content: flex-end; }
+.prompt .blank { display: inline-block; min-width: 70px; border-bottom: 3px solid var(--sun); margin-inline: 4px; color: var(--accent); text-align: center; }
+.opts { display: flex; flex-direction: column; gap: 10px; }
+.opt { background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 13px 16px; text-align: right; font-size: 17px; }
+.opt.es { text-align: left; }
+.opt:hover:not(:disabled) { border-color: var(--accent); }
+.opt.right { background: var(--good-soft); border-color: var(--good); }
+.opt.wrong { background: var(--bad-soft); border-color: var(--bad); }
+.opt:disabled { cursor: default; }
+.slots { min-height: 58px; border-bottom: 2px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 10px; margin-bottom: 18px; direction: ltr; }
+.bank { display: flex; flex-wrap: wrap; gap: 8px; direction: ltr; }
+.tok { background: var(--surface); border: 1.5px solid var(--line); border-bottom-width: 3px; border-radius: 10px; padding: 7px 13px; font-family: var(--display); font-size: 17px; font-weight: 600; }
+.tok.used { visibility: hidden; }
+.feedback { position: sticky; bottom: 0; margin-top: 24px; border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.feedback.good { background: var(--good-soft); }
+.feedback.bad { background: var(--bad-soft); }
+.feedback b { font-size: 17px; }
+.feedback .good-t { color: var(--good); }
+.feedback .bad-t { color: var(--bad); }
+.check { margin-top: 24px; width: 100%; }
+
+/* flashcards */
+.card { background: var(--surface); border: 1.5px solid var(--line); border-radius: 20px; min-height: 230px; padding: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; width: 100%; margin-bottom: 14px; }
+.card .front { font-family: var(--display); font-size: clamp(28px, 8vw, 38px); font-weight: 800; direction: ltr; }
+.card .back-t { font-size: 22px; color: var(--accent); }
+.card small { color: var(--muted); }
+
+/* result */
+.result { text-align: center; padding-block: 40px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.score { font-family: var(--display); font-size: 64px; font-weight: 800; line-height: 1; direction: ltr; font-variant-numeric: tabular-nums; }
+.score small { font-size: 26px; color: var(--muted); }
+.result p { color: var(--muted); margin: 0; }
+.review { margin-top: 18px; width: 100%; text-align: right; }
+
+/* form */
+.form { display: flex; flex-direction: column; gap: 14px; }
+.form label { display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 15px; }
+.form input, .form textarea, .form select { font: inherit; color: var(--ink); background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 11px 13px; width: 100%; }
+.form textarea { min-height: 220px; direction: ltr; text-align: left; line-height: 1.8; font-family: var(--display); }
+.help { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; font-size: 14.5px; color: var(--muted); }
+.help code { font-family: var(--display); color: var(--ink); direction: ltr; unicode-bidi: isolate; }
+.err { color: var(--bad); font-size: 14px; margin: 0; }
+.danger { background: none; border: 0; color: var(--bad); font-size: 14px; padding: 8px 0; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media (max-width: 420px) { .levels { gap: 5px; } .lvl b { font-size: 19px; } .vrow { grid-template-columns: 36px 1fr; } .vrow .ar { grid-column: 2; margin-top: -6px; } }
+</style>
+
+<main id="app" dir="rtl" lang="ar"></main>
+
+<script>
+/* ============ المحتوى: الدروس ============
+   كل درس: level, es (العنوان), ar, note (سطور، الكلمات الإسبانية بين {})، vocab [es, ar],
+   fill [الجملة مع ___, الجواب, [الغلطين]], build [الجملة, المعنى] */
+const LEVELS = [
+  { id: "A1", name: "A uno", ar: "المبتدئ" },
+  { id: "A2", name: "A dos", ar: "ما قبل المتوسط" },
+  { id: "B1", name: "B uno", ar: "المتوسط" },
+  { id: "B2", name: "B dos", ar: "فوق المتوسط" },
+  { id: "C1", name: "C uno", ar: "المتقدم" }
+];
+
+const SECTIONS = [
+  { id: "course", title: "الدروس ديال الدورة" },
+  { id: "grammar", title: "القواعد (تمارين زايدين)" },
+  { id: "", title: "" },
+  { id: "mine", title: "الدروس اللي زدتي" }
+];
+
+const LESSONS = [
+  // ---------- A1: الدروس ديال الدورة (بنفس الترتيب ديال الجروب) ----------
+  { id: "c01", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/8", es: "El alfabeto", ar: "الحروف",
+    note: ["الأبجدية فالإسبانية فيها 27 حرف. كاين حرف خاص: {ñ} ({eñe}) كينطق «نْي» بحال {España}.",
+           "{h} ما كتنطقش: {hola} كتقرا «أولا». {j} كتنطق بحال «خ»: {jamón}.",
+           "{ll} و {y} كينطقو بحال «ي»: {llamar}. {b} و {v} كينطقو بجوج بحال «ب»."],
+    vocab: [["a","حرف A"],["be","حرف B"],["ce","حرف C"],["hache","حرف H (ما كينطقش)"],["jota","حرف J (كينطق خ)"],["eñe","حرف Ñ (نْي)"],["uve","حرف V"],["equis","حرف X"],["i griega","حرف Y"],["zeta","حرف Z"],["erre","حرف R"],["elle","حرف LL (ي)"]],
+    fill: [["La letra Ñ se llama ___.","eñe",["ene","elle","jota"]],["La letra J se llama ___.","jota",["ge","hache","i griega"]],["En «hola» la letra ___ no se pronuncia.","h",["o","l","a"]],["«España» se escribe con ___.","ñ",["n","ll","y"]]],
+    build: [["¿Cómo se escribe tu nombre?","كيفاش كتكتب السمية ديالك؟"],["Se escribe con jota","كتكتب بحرف J"]] },
+  { id: "c02", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/9", es: "Las primeras 50 frases (1)", ar: "أول 50 جملة (الجزء 1)",
+    note: ["جمل كتستعملها كل نهار. حفظها كاملة بحال ما هي.",
+           "{¿Qué tal?} = لاباس؟ والجواب: {Muy bien, gracias}. {De nada} = بلا جميل."],
+    vocab: [["hola","سلام"],["buenos días","صباح الخير"],["buenas noches","تصبح على خير"],["¿qué tal?","لاباس؟"],["muy bien","مزيان بزاف"],["gracias","شكرا"],["de nada","بلا جميل"],["por favor","عافاك"],["lo siento","سمح ليا (متأسف)"],["perdón","سمح ليا"],["sí","إيه"],["adiós","بسلامة"],["hasta mañana","حتى لغدا"]],
+    fill: [["Muchas gracias. — De ___.","nada",["favor","bien","tal"]],["Hola, ¿qué ___?","tal",["nada","siento","días"]],["Lo ___, no entiendo.","siento",["tal","gracias","bien"]],["Hasta ___.","mañana",["nada","perdón","gracias"]]],
+    build: [["¿Cómo te llamas?","شنو سميتك؟"],["Me llamo Youssef","سميتي يوسف"],["Muy bien, gracias","مزيان بزاف، شكرا"]] },
+  { id: "c02b", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/11", es: "Las primeras 50 frases (2)", ar: "أول 50 جملة (الجزء 2)",
+    note: ["جمل باش تسول وتفهم. {¿Puedes repetir?} و {más despacio} كيعاونوك بزاف فالأول.",
+           "{Tengo hambre} = فيا الجوع. فالإسبانية كنقولو «عندي الجوع» بالفعل {tener}."],
+    vocab: [["¿de dónde eres?","منين نتا؟"],["soy de Marruecos","أنا من المغرب"],["¿hablas español?","واش كتهضر الإسبانية؟"],["un poco","شوية"],["no entiendo","ما فهمتش"],["¿puedes repetir?","تقدر تعاود؟"],["más despacio","بشوية"],["¿cuánto cuesta?","بشحال؟"],["tengo hambre","فيا الجوع"],["tengo sed","فيا العطش"],["no sé","ما عرفتش"]],
+    fill: [["¿De dónde ___? — Soy de Marruecos.","eres",["es","soy","son"]],["Hablo español un ___.","poco",["mucho","nada","bien"]],["¿Cuánto ___ esto?","cuesta",["cuestas","está","tiene"]],["Tengo ___, quiero agua.","sed",["hambre","frío","sueño"]]],
+    build: [["¿Dónde está el baño?","فين كاين الطواليط؟"],["No entiendo, ¿puedes repetir?","ما فهمتش، تقدر تعاود؟"],["Habla más despacio, por favor","هضر بشوية عافاك"]] },
+  { id: "c03", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/12", es: "Los números cardinales", ar: "الأرقام الأساسية",
+    note: ["من 11 حتى 15 عندهم سميات خاصة: {once, doce, trece, catorce, quince}. ومن 16: {dieciséis, diecisiete}.",
+           "من 21 حتى 29 كلمة وحدة: {veintiuno, veintidós}. ومن 31: {treinta y uno}.",
+           "باش تقول العمر: {Tengo} 20 {años}."],
+    vocab: [["uno","واحد · 1"],["dos","جوج · 2"],["tres","تلاتة · 3"],["cinco","خمسة · 5"],["diez","عشرة · 10"],["once","حداش · 11"],["doce","طناش · 12"],["quince","خمسطاش · 15"],["veinte","عشرين · 20"],["treinta","تلاتين · 30"],["cincuenta","خمسين · 50"],["cien","مية · 100"],["mil","ألف · 1000"]],
+    fill: [["Tengo ___ años. (20)","veinte",["doce","dos","cien"]],["Dos más tres son ___.","cinco",["seis","cuatro","tres"]],["Tengo ___ años. (15)","quince",["cinco","cincuenta","once"]],["Una semana tiene ___ días.","siete",["seis","cinco","diez"]]],
+    build: [["Tengo treinta años","عندي 30 عام"],["Mi número es el doce","الرقم ديالي هو 12"]] },
+  { id: "c04", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/13", es: "Los números ordinales", ar: "الأرقام الترتيبية",
+    note: ["{primero, segundo, tercero, cuarto, quinto, sexto, séptimo, octavo, noveno, décimo}.",
+           "كيتبدلو مع المؤنث: {la primera vez}.",
+           "قبل الاسم المذكر، {primero} كتولي {primer} و {tercero} كتولي {tercer}: {el primer día}."],
+    vocab: [["primero","الأول"],["segundo","التاني"],["tercero","التالت"],["cuarto","الرابع"],["quinto","الخامس"],["sexto","السادس"],["séptimo","السابع"],["octavo","التامن"],["noveno","التاسع"],["décimo","العاشر"],["último","اللخر"]],
+    fill: [["Vivo en el ___ piso. (3)","tercer",["tres","tercero","tercera"]],["Hoy es el ___ día de clase. (1)","primer",["primero","uno","primera"]],["Es la ___ vez que vengo. (2)","segunda",["segundo","dos","segundos"]],["Marzo es el ___ mes del año.","tercer",["tercero","tres","tercera"]]],
+    build: [["Vivo en el segundo piso","ساكن فالطابق التاني"],["Es mi primera clase","هادي أول حصة ديالي"]] },
+  { id: "c05", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/14", es: "La hora", ar: "الساعة بالإسبانية",
+    note: ["{¿Qué hora es?} = شحال فالساعة؟ الجواب: {Es la una} (الوحدة) و {Son las dos, las tres...}",
+           "{y cuarto} = وربع، {y media} = ونص، {menos cuarto} = قل ربع، {en punto} = نيشان."],
+    vocab: [["¿qué hora es?","شحال فالساعة؟"],["es la una","الوحدة"],["son las dos","الجوج"],["y cuarto","وربع"],["y media","ونص"],["menos cuarto","قل ربع"],["en punto","نيشان"],["de la mañana","فالصباح"],["de la tarde","فالعشية"],["de la noche","فالليل"],["el mediodía","الظهر"],["la medianoche","نص الليل"]],
+    fill: [["Es la una y ___. (1:30)","media",["cuarto","menos","punto"]],["Son las tres ___ cuarto. (3:15)","y",["de","en","a"]],["Son las cinco ___ cuarto. (4:45)","menos",["y","en","de"]],["___ las ocho de la mañana.","Son",["Es","Está","Hay"]]],
+    build: [["Son las ocho y media","التمنية ونص"],["¿A qué hora empieza la clase?","فوقاش كتبدا الحصة؟"]] },
+  { id: "c06", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/17", es: "Los días de la semana", ar: "أيام الأسبوع",
+    note: ["الأيام كيتكتبو بحروف صغار: {lunes}، ماشي {Lunes}.",
+           "«نهار الاثنين» = {el lunes}. «كل اثنين» = {los lunes}."],
+    vocab: [["lunes","الاثنين"],["martes","الثلاث"],["miércoles","الربع"],["jueves","الخميس"],["viernes","الجمعة"],["sábado","السبت"],["domingo","الحد"],["hoy","اليوم"],["mañana","غدا"],["ayer","البارح"],["el fin de semana","الويكاند"]],
+    fill: [["Después del lunes viene el ___.","martes",["domingo","jueves","sábado"]],["Hoy es viernes, mañana es ___.","sábado",["jueves","domingo","lunes"]],["No trabajo ___ domingos.","los",["el","la","las"]],["Ayer fue miércoles, hoy es ___.","jueves",["martes","viernes","lunes"]]],
+    build: [["Hoy es lunes","اليوم الاثنين"],["El sábado voy a la playa","نهار السبت غادي نمشي للبحر"]] },
+  { id: "c07", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/18", es: "Los meses del año", ar: "أشهر السنة",
+    note: ["الشهور حتى هوما كيتكتبو بحروف صغار: {enero, febrero...}",
+           "«فشهر» = {en}: {en julio}. التاريخ: {el 5 de mayo}."],
+    vocab: [["enero","يناير"],["febrero","فبراير"],["marzo","مارس"],["abril","أبريل"],["mayo","ماي"],["junio","يونيو"],["julio","يوليوز"],["agosto","غشت"],["septiembre","شتنبر"],["octubre","أكتوبر"],["noviembre","نونبر"],["diciembre","دجنبر"]],
+    fill: [["El primer mes del año es ___.","enero",["junio","febrero","marzo"]],["Después de julio viene ___.","agosto",["junio","septiembre","mayo"]],["Mi cumpleaños es ___ abril.","en",["el","a","de"]],["El último mes del año es ___.","diciembre",["noviembre","enero","octubre"]]],
+    build: [["Mi cumpleaños es en mayo","عيد الميلاد ديالي فماي"],["En agosto hace mucho calor","فغشت كتكون السخونية بزاف"]] },
+  { id: "c08", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/21", es: "Las estaciones del año", ar: "فصول السنة",
+    note: ["{la primavera, el verano, el otoño, el invierno}.",
+           "الطقس كنقولوه بـ {hace}: {hace calor}، {hace frío}، {hace sol}. والشتا والثلج: {llueve}، {nieva}."],
+    vocab: [["la primavera","الربيع"],["el verano","الصيف"],["el otoño","الخريف"],["el invierno","فصل الشتا"],["hace calor","كاينة السخونية"],["hace frío","كاين البرد"],["llueve","كتشتا"],["nieva","كيطيح الثلج"],["hace sol","كاينة الشمس"],["hace viento","كاين الريح"]],
+    fill: [["En invierno hace ___.","frío",["calor","sol","verano"]],["En ___ vamos a la playa.","verano",["invierno","otoño","frío"]],["Hoy ___ mucho, necesito un paraguas.","llueve",["hace","sol","verano"]],["Después del invierno viene la ___.","primavera",["otoño","verano","invierno"]]],
+    build: [["En verano hace mucho calor","فالصيف كتكون السخونية بزاف"],["Me gusta el otoño","كيعجبني الخريف"]] },
+  { id: "c09", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/24", es: "Las direcciones", ar: "الاتجاهات",
+    note: ["باش تسول على الطريق: {¿Dónde está...?} ولا {¿Cómo llego a...?}",
+           "{de + el} كتولي {del}: {al lado del banco}."],
+    vocab: [["a la derecha","على ليمن"],["a la izquierda","على ليسر"],["todo recto","نيشان"],["cerca","قريب"],["lejos","بعيد"],["al lado de","حدا"],["enfrente de","مقابل"],["detrás de","من ور"],["gira","دور"],["la calle","الزنقة"],["la esquina","الكوان (راس الزنقة)"]],
+    fill: [["Sigue todo ___.","recto",["derecha","cerca","calle"]],["Gira a la ___ en la esquina.","izquierda",["recto","cerca","lejos"]],["La farmacia está al lado ___ banco.","del",["de la","en","a"]],["¿Está ___? — No, está a cinco minutos.","lejos",["recto","derecha","esquina"]]],
+    build: [["¿Dónde está la estación?","فين كاينة المحطة؟"],["Gira a la derecha","دور على ليمن"],["Está cerca de aquí","قريبة من هنا"]] },
+  { id: "c10", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/27", es: "La fecha", ar: "كيفاش تسول على التاريخ",
+    note: ["{¿Qué fecha es hoy?} ولا {¿A qué estamos hoy?} = أشمن تاريخ اليوم؟",
+           "الجواب: {Hoy es el 5 de marzo}. العام: {Nací en 1998}."],
+    vocab: [["¿qué fecha es hoy?","أشمن تاريخ اليوم؟"],["¿qué día es hoy?","أشمن نهار اليوم؟"],["el cumpleaños","عيد الميلاد"],["el año","العام"],["el mes","الشهر"],["la semana","السيمانة"],["el día","النهار"],["¿cuándo?","فوقاش؟"],["nací","تزاديت"]],
+    fill: [["Hoy es el cinco ___ marzo.","de",["en","a","el"]],["¿Qué ___ es hoy? — Es el 10 de mayo.","fecha",["hora","año","mes"]],["¿___ es tu cumpleaños?","Cuándo",["Qué","Dónde","Cuánto"]],["Nací ___ 1998.","en",["de","el","a"]]],
+    build: [["Hoy es el doce de octubre","اليوم 12 أكتوبر"],["¿Cuándo es tu cumpleaños?","فوقاش عيد الميلاد ديالك؟"]] },
+  { id: "c11", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/30", es: "Pronombres personales", ar: "ضمائر الفاعل",
+    note: ["{yo, tú, él, ella, usted, nosotros, vosotros, ellos, ellas, ustedes}.",
+           "بزاف دالمرات كنحيدو الضمير: {Soy Ali} عوض {Yo soy Ali}.",
+           "{usted} للاحترام، وكياخد نفس الفعل ديال {él}: {¿Usted es el profesor?}"],
+    vocab: [["yo","أنا"],["tú","نتا / نتي"],["él","هو"],["ella","هي"],["usted","حضرتك (باحترام)"],["nosotros","حنا"],["vosotros","نتوما"],["ellos","هوما (رجال)"],["ellas","هوما (عيالات)"],["ustedes","حضراتكم"]],
+    fill: [["___ soy estudiante.","Yo",["Tú","Él","Nosotros"]],["___ somos hermanos.","Nosotros",["Ellos","Yo","Tú"]],["¿___ eres de Tánger?","Tú",["Yo","Él","Usted"]],["María y Ana: ___ son amigas.","ellas",["ellos","nosotras","ella"]]],
+    build: [["Ella es mi hermana","هي أختي"],["Nosotros somos de Rabat","حنا من الرباط"]] },
+  { id: "c12", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/34", es: "Pronombres de objeto", ar: "ضمائر المفعول به",
+    note: ["باش ما تعاودش الكلمة: {¿El libro? Lo tengo.}",
+           "{lo} (مذكر)، {la} (مؤنث)، {los}، {las}، و {me, te, nos, os}. كيجيو قبل الفعل."],
+    vocab: [["lo","ه (مذكر)"],["la","ها (مؤنث)"],["los","هم"],["las","هن"],["me","ني"],["te","ك"],["nos","نا"],["ya","ديجا"]],
+    fill: [["¿Tienes el libro? — Sí, ___ tengo.","lo",["la","los","las"]],["¿Compraste las manzanas? — Sí, ___ compré.","las",["los","la","lo"]],["¿Me llamas mañana? — Sí, ___ llamo.","te",["me","lo","nos"]],["¿Ves a María? — No, no ___ veo.","la",["lo","le","las"]]],
+    build: [["Te quiero mucho","كنبغيك بزاف"],["Lo compré ayer","شريتو البارح"]] },
+  { id: "c13", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/35", es: "Los colores", ar: "الألوان",
+    note: ["اللون كيجي من بعد الاسم: {un coche rojo}.",
+           "كيتبدل مع المؤنث والجمع: {una casa roja}، {los zapatos negros}. {azul, verde, gris} ما كيتبدلوش مع المؤنث."],
+    vocab: [["rojo","حمر"],["azul","زرق"],["verde","خضر"],["amarillo","صفر"],["negro","كحل"],["blanco","بيض"],["gris","رمادي"],["marrón","قهوي"],["naranja","ليموني"],["rosa","وردي"],["morado","موف"]],
+    fill: [["El cielo es ___.","azul",["rojo","negro","verde"]],["Tengo una camisa ___.","blanca",["blanco","blancos","blancas"]],["La hierba es ___.","verde",["azul","amarilla","gris"]],["Los plátanos son ___.","amarillos",["amarillo","amarilla","amarillas"]]],
+    build: [["Mi coche es negro","الطوموبيل ديالي كحلة"],["Me gusta el color azul","كيعجبني اللون الزرق"]] },
+  { id: "c14", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/36", es: "El cuerpo", ar: "أعضاء الجسم",
+    note: ["باش تقول «كيضرني»: {me duele} + مفرد ({me duele la cabeza})، {me duelen} + جمع ({me duelen los pies})."],
+    vocab: [["la cabeza","الراس"],["el ojo","العين"],["la nariz","النيف"],["la boca","الفم"],["la oreja","الودن"],["el pelo","الشعر"],["la mano","اليد"],["el brazo","الدراع"],["la pierna","الرجل"],["el pie","القدم"],["el estómago","الكرش"],["la espalda","الظهر"]],
+    fill: [["Me ___ la cabeza.","duele",["duelen","dolor","duelo"]],["Me duelen los ___.","pies",["pie","cabeza","mano"]],["Vemos con los ___.","ojos",["orejas","manos","pies"]],["Escribo con la ___ derecha.","mano",["pierna","nariz","oreja"]]],
+    build: [["Me duele el estómago","كتضرني الكرش"],["Tengo los ojos negros","عندي العينين كحلين"]] },
+  { id: "c15", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/37", es: "La familia", ar: "العائلة",
+    note: ["باش تقول «ديالي» قبل الكلمة: {mi} للمفرد ({mi padre}) و {mis} للجمع ({mis padres}).",
+           "{padres} معناها الباب والماما بجوج."],
+    vocab: [["el padre","الباب"],["la madre","الماما"],["el hermano","خو"],["la hermana","أخت"],["el abuelo","الجد"],["la abuela","الجدة"],["el hijo","الولد (الابن)"],["el tío","العم / الخال"],["el primo","ولد العم"],["la esposa","المرا (الزوجة)"]],
+    fill: [["La madre de mi madre es mi ___.","abuela",["tía","hermana","prima"]],["Tengo dos ___: Ali y Omar.","hermanos",["hermana","abuela","tío"]],["El hermano de mi padre es mi ___.","tío",["primo","abuelo","hijo"]],["___ padre es médico.","Mi",["Yo","Tú","Él"]]],
+    build: [["Tengo una hermana pequeña","عندي أخت صغيرة"],["Mi familia es grande","العائلة ديالي كبيرة"]] },
+  { id: "c16", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/38", es: "Adjetivos y emociones", ar: "الصفات والمشاعر",
+    note: ["المشاعر (حاجة مؤقتة) مع {estar}: {Estoy triste}.",
+           "الوصف (حاجة ما كتبدلش) مع {ser}: {Es alto}.",
+           "الصفة كتبدل مع المؤنث: {alto → alta}، {pequeño → pequeña}."],
+    vocab: [["feliz","فرحان"],["triste","حزين"],["cansado","عيان"],["enfadado","مقلق"],["nervioso","متوتر"],["tranquilo","هاني"],["grande","كبير"],["pequeño","صغير"],["alto","طويل"],["bajo","قصير"],["guapo","زوين"],["simpático","ضريف"]],
+    fill: [["Hoy ___ muy cansado.","estoy",["soy","es","hay"]],["Mi hermano ___ alto y simpático.","es",["está","estoy","hay"]],["Hoy es mi cumpleaños y estoy muy ___.","feliz",["triste","enfadado","cansado"]],["Mi casa no es grande, es ___.","pequeña",["pequeño","grande","alta"]]],
+    build: [["Estoy muy contento hoy","فرحان بزاف اليوم"],["Mi amiga es muy simpática","صاحبتي ضريفة بزاف"]] },
+  { id: "c17", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/39", es: "Las profesiones", ar: "الوظائف والمهن",
+    note: ["{¿A qué te dedicas?} = شنو كتخدم؟",
+           "الجواب بلا {un}: {Soy médico}. المؤنث: {médica, profesora, enfermera}."],
+    vocab: [["el médico","الطبيب"],["el profesor","الأستاذ"],["el ingeniero","المهندس"],["el enfermero","الفرملي"],["el abogado","المحامي"],["el policía","البوليسي"],["el cocinero","الطباخ"],["el camarero","السرباي"],["el conductor","الشيفور"],["el mecánico","الميكانيسيان"],["el vendedor","البياع"]],
+    fill: [["Mi madre es ___. Trabaja en un hospital.","enfermera",["enfermero","cocinero","camarero"]],["El ___ trabaja en un restaurante.","cocinero",["médico","abogado","policía"]],["¿A qué te ___? — Soy profesor.","dedicas",["llamas","gusta","dedico"]],["Mi padre es ___. Conduce un taxi.","conductor",["mecánico","abogado","profesor"]]],
+    build: [["Soy ingeniero","أنا مهندس"],["Mi hermana es médica","أختي طبيبة"]] },
+  { id: "c18", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/41", es: "La comida", ar: "الطعام بالإسبانية",
+    note: ["{el desayuno} = الفطور، {la comida} = الغدا، {la cena} = العشا.",
+           "{me gusta} + حاجة وحدة: {Me gusta el té}. {me gustan} + بزاف: {Me gustan los huevos}."],
+    vocab: [["el pan","الخبز"],["el agua","الما"],["la leche","الحليب"],["el pollo","الدجاج"],["la carne","اللحم"],["el pescado","الحوت"],["el huevo","البيضة"],["el queso","الفرماج"],["el arroz","الروز"],["el té","أتاي"],["el desayuno","الفطور"],["la cena","العشا"]],
+    fill: [["Me ___ el té.","gusta",["gustan","gusto","gustas"]],["Me ___ los huevos.","gustan",["gusta","gusto","gustamos"]],["Para el ___ tomo café con leche.","desayuno",["cena","queso","pollo"]],["No me gusta ___ leche.","la",["el","los","las"]]],
+    build: [["Me gusta mucho el té","كيعجبني أتاي بزاف"],["Quiero un vaso de agua","بغيت كاس ديال الما"]] },
+  { id: "c19", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/42", es: "Frutas y verduras", ar: "الخضر والفواكه",
+    note: ["فالسوق: {Un kilo de tomates, por favor}. {¿Cuánto cuesta el kilo?}"],
+    vocab: [["la manzana","التفاحة"],["el plátano","البنانة"],["la naranja","الليمونة"],["las uvas","العنب"],["la fresa","الفريز"],["la sandía","الدلاح"],["el tomate","الطماطم"],["la patata","البطاطا"],["la cebolla","البصلة"],["la zanahoria","خيزو"],["la lechuga","الخص"],["el pimiento","الفلفلة"]],
+    fill: [["La ___ es roja y pequeña.","fresa",["sandía","patata","lechuga"]],["El plátano es ___.","amarillo",["azul","rojo","negro"]],["Para la ensalada necesito ___.","lechuga",["plátano","fresa","sandía"]],["Un kilo ___ patatas, por favor.","de",["en","a","por"]]],
+    build: [["Me gustan las manzanas","كيعجبني التفاح"],["Un kilo de patatas, por favor","كيلو ديال البطاطا عافاك"]] },
+  { id: "c20", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/43", es: "La casa", ar: "أجزاء المنزل",
+    note: ["{Mi casa tiene...} = الدار ديالي فيها...",
+           "{arriba} = لفوق، {abajo} = لتحت."],
+    vocab: [["la cocina","الكوزينة"],["el dormitorio","بيت النعاس"],["el salón","الصالون"],["el baño","الطواليط / الدوش"],["la ventana","الشرجم"],["la puerta","الباب"],["el jardín","الجردة"],["la escalera","الدروج"],["el techo","السقف"],["el suelo","الأرض"],["la habitación","البيت"]],
+    fill: [["Cocino en la ___.","cocina",["baño","salón","ventana"]],["Duermo en el ___.","dormitorio",["jardín","baño","techo"]],["Abre la ___, hace calor.","ventana",["cocina","escalera","suelo"]],["Mi casa ___ tres habitaciones.","tiene",["es","hay","está"]]],
+    build: [["Mi casa tiene un jardín","الدار ديالي فيها جردة"],["El baño está arriba","الطواليط لفوق"]] },
+  { id: "c21", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/44", es: "La ropa", ar: "الملابس",
+    note: ["{llevar} = لابس: {Llevo una camisa azul}.",
+           "{ponerse} = لبس: {Me pongo el abrigo}."],
+    vocab: [["la camisa","القميجة"],["la camiseta","التيشورت"],["los pantalones","السروال"],["la falda","الصاية"],["el vestido","الروبة"],["los zapatos","الصباط"],["la chaqueta","الجاكيط"],["el abrigo","المونطو"],["el jersey","التريكو"],["los calcetines","التقاشر"],["la gorra","الكاسكيطة"]],
+    fill: [["Hace frío, me pongo el ___.","abrigo",["camiseta","falda","gorra"]],["Yo hoy ___ unos pantalones negros.","llevo",["lleva","llevar","llevado"]],["Los ___ son para los pies.","zapatos",["pantalones","jerseys","vestidos"]],["Mi hermana lleva una ___ roja.","falda",["zapatos","abrigo","pantalones"]]],
+    build: [["Llevo una camisa blanca","لابس قميجة بيضا"],["¿Cuánto cuestan estos zapatos?","بشحال هاد الصباط؟"]] },
+  { id: "c22", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/45", es: "El pelo", ar: "أنواع وألوان الشعر",
+    note: ["{Tengo el pelo largo y rizado}. {pelo} مذكر، إذن الصفة ديما مذكرة: {el pelo rizado}.",
+           "على الشخص: {Es rubio / moreno / calvo}، والمؤنث: {rubia, morena}."],
+    vocab: [["el pelo","الشعر"],["largo","طويل"],["corto","قصير"],["liso","مسبول"],["rizado","مجعد"],["ondulado","موجي"],["rubio","شقر"],["moreno","كحل / سمر"],["pelirrojo","حمر الشعر"],["canoso","شايب"],["calvo","صلع"],["la barba","اللحية"]],
+    fill: [["Tengo el ___ corto.","pelo",["barba","rubio","calvo"]],["Mi abuelo no tiene pelo, es ___.","calvo",["rubio","rizado","largo"]],["Mi abuela tiene el pelo blanco, es ___.","canosa",["canoso","rubia","calva"]],["Ella tiene el pelo ___.","rizado",["rizada","rizados","rizadas"]]],
+    build: [["Tengo el pelo largo y liso","عندي الشعر طويل ومسبول"],["Mi padre tiene barba","الباب عندو اللحية"]] },
+  { id: "c23", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/46", es: "En la escuela", ar: "فالمدرسة",
+    note: ["{¿Me prestas...?} = تسلفني...؟ كتنفعك بزاف فالقسم."],
+    vocab: [["la clase","القسم"],["el libro","الكتاب"],["el cuaderno","الكايي"],["el bolígrafo","الستيلو"],["el lápiz","الكرايون"],["la goma","الݣومة"],["la mochila","الصاك"],["la pizarra","السبورة"],["la mesa","الطبلة"],["la silla","الكرسي"],["el examen","الامتحان"]],
+    fill: [["Escribo en el ___.","cuaderno",["lápiz","silla","examen"]],["El profesor escribe en la ___.","pizarra",["mochila","goma","silla"]],["Mañana tengo un ___ de español.","examen",["mochila","pizarra","goma"]],["Los libros están en la ___.","mochila",["lápiz","examen","bolígrafo"]]],
+    build: [["¿Me prestas un bolígrafo?","تسلفني ستيلو؟"],["Abrid el libro, por favor","حلو الكتاب عافاكم"]] },
+  { id: "c24", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/47", es: "En la ciudad", ar: "فالمدينة",
+    note: ["{a + el} كتولي {al}: {Voy al banco}. أما {a la}: {Voy a la farmacia}."],
+    vocab: [["el banco","البنكة"],["el hospital","السبيطار"],["la farmacia","الفرمسيان"],["el supermercado","السوبرماركت"],["la estación","المحطة"],["el aeropuerto","المطار"],["la plaza","الساحة"],["el parque","البارك"],["la mezquita","الجامع"],["el restaurante","الريسطو"],["el mercado","السوق"]],
+    fill: [["Compro medicinas en la ___.","farmacia",["banco","plaza","estación"]],["Cojo el tren en la ___.","estación",["farmacia","plaza","mezquita"]],["Vamos a comer ___ restaurante.","al",["a la","en el","del"]],["Voy ___ banco.","al",["a la","a","del"]]],
+    build: [["¿Dónde está el hospital?","فين كاين السبيطار؟"],["Hay un mercado en la plaza","كاين سوق فالساحة"]] },
+  { id: "c25", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/48", es: "Los animales", ar: "الحيوانات",
+    note: ["الجمع: {el pez → los peces}، {el león → los leones}."],
+    vocab: [["el perro","الكلب"],["el gato","المش"],["el caballo","العود"],["la vaca","البقرة"],["la oveja","الحولية"],["la cabra","المعزة"],["el pájaro","الطير"],["el pez","الحوتة"],["el burro","الحمار"],["la gallina","الدجاجة"],["el león","السبع"],["el camello","الجمل"]],
+    fill: [["El ___ dice «miau».","gato",["perro","pájaro","caballo"]],["La ___ nos da leche.","vaca",["gato","pájaro","león"]],["Los ___ viven en el agua.","peces",["pez","pájaros","perros"]],["En el desierto hay ___.","camellos",["peces","vacas","pájaros"]]],
+    build: [["Tengo un perro pequeño","عندي كلب صغير"],["Me gustan los gatos","كيعجبوني المشاش"]] },
+  { id: "c26", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/49", es: "Vacaciones y fiestas", ar: "العطل والحفلات",
+    note: ["{¡Feliz cumpleaños!} = عيد ميلاد سعيد. {¡Felicidades!} = مبروك.",
+           "{ir de vacaciones} = مشى فالعطلة."],
+    vocab: [["las vacaciones","العطلة"],["la fiesta","الحفلة"],["el cumpleaños","عيد الميلاد"],["la boda","العرس"],["el regalo","الكادو"],["el Ramadán","رمضان"],["el viaje","السفر"],["la playa","البحر (الشاطئ)"],["celebrar","احتفل"],["¡Felicidades!","مبروك!"]],
+    fill: [["¡Feliz ___! Tienes 30 años.","cumpleaños",["boda","viaje","regalo"]],["En verano voy de ___ a la playa.","vacaciones",["fiesta","regalo","boda"]],["Te he comprado un ___.","regalo",["fiesta","boda","playa"]],["Mañana es la ___ de mi prima. ¡Se casa!","boda",["regalo","viaje","cumpleaños"]]],
+    build: [["Vamos a celebrar tu cumpleaños","غادي نحتافلو بعيد الميلاد ديالك"],["Me voy de vacaciones en agosto","غادي فالعطلة فغشت"]] },
+  { id: "c27", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/50", es: "Los deportes", ar: "الرياضة",
+    note: ["{jugar al} + رياضة: {Juego al fútbol}.",
+           "{hacer deporte} = دار الرياضة."],
+    vocab: [["el fútbol","الكورة"],["el baloncesto","الباسكيط"],["el tenis","التنس"],["la natación","العوم"],["correr","جرى"],["nadar","عام"],["jugar","لعب"],["el equipo","الفرقة"],["el partido","الماتش"],["ganar","ربح"],["perder","خسر"],["el gimnasio","الصالة (جيم)"]],
+    fill: [["Juego ___ fútbol.","al",["el","en","a la"]],["Ayer mi equipo ___ 3-1. ¡Qué alegría!","ganó",["perdió","jugamos","corre"]],["Voy al ___ tres veces por semana.","gimnasio",["partido","equipo","tenis"]],["Me gusta ___ en la piscina.","nadar",["correr","jugar","ganar"]]],
+    build: [["Juego al fútbol los domingos","كنلعب الكورة نهار الحد"],["¿Haces deporte?","واش كدير الرياضة؟"]] },
+  { id: "c28", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/51", es: "El tiempo libre", ar: "وقت الفراغ",
+    note: ["{En mi tiempo libre me gusta} + فعل كامل: {me gusta leer}.",
+           "{salir} شاذ: {yo salgo}."],
+    vocab: [["leer","قرا"],["ver la tele","شاف التلفازة"],["escuchar música","سمع الموسيقى"],["salir con amigos","خرج مع الصحاب"],["pasear","تسارا"],["cocinar","طيب"],["dibujar","رسم"],["bailar","شطح"],["viajar","سافر"],["el cine","السينما"]],
+    fill: [["En mi tiempo libre me gusta ___.","leer",["leo","lees","leído"]],["Los sábados ___ con mis amigos.","salgo",["salir","sale","salido"]],["¿Vamos al ___ a ver una película?","cine",["tele","música","película"]],["Me gusta escuchar ___.","música",["cine","tele","película"]]],
+    build: [["Me gusta leer libros","كيعجبني نقرا الكتوبة"],["Los domingos paseo por el parque","نهار الحد كنتسارا فالبارك"]] },
+  { id: "c29", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/52", es: "Las tareas domésticas", ar: "المهام المنزلية",
+    note: ["{Tengo que} + فعل = خاصني: {Tengo que limpiar}.",
+           "{hacer} شاذ: {yo hago}: {Hago la cama}."],
+    vocab: [["limpiar","نقى"],["lavar los platos","غسل المواعن"],["barrer","شطب"],["fregar el suelo","سيق الأرض"],["hacer la cama","وجد الناموسية"],["planchar","كوى الحوايج"],["poner la lavadora","دار الماشينة"],["sacar la basura","خرج الزبل"],["ordenar","رتب"],["hacer la compra","تقضى"],["ayudar","عاون"]],
+    fill: [["Después de comer, lavo los ___.","platos",["suelos","camas","basura"]],["Por la mañana hago la ___.","cama",["plato","lavadora","suelo"]],["¿Puedes sacar la ___?","basura",["cama","plato","suelo"]],["Mi hermano no me ___ en casa.","ayuda",["ayudar","ayudo","ayudamos"]]],
+    build: [["Yo lavo los platos","أنا كنغسل المواعن"],["Tengo que limpiar mi habitación","خاصني نقي البيت ديالي"]] },
+  { id: "c30", level: "A1", sec: "course", tg: "https://t.me/c/2091493340/53", es: "Ciudades y nacionalidades", ar: "المدن والجنسيات",
+    note: ["الجنسيات كيتكتبو بحروف صغار: {español}.",
+           "المؤنث: {española, francesa, alemana}. {marroquí} ما كتبدلش."],
+    vocab: [["Marruecos","المغرب"],["marroquí","مغربي"],["España","سبانيا"],["español","سبنيولي"],["Francia","فرانسا"],["francés","فرنساوي"],["Alemania","ألمانيا"],["alemán","ألماني"],["Inglaterra","نجلترا"],["inglés","نجليزي"],["Estados Unidos","ميريكان"]],
+    fill: [["Soy de Marruecos, soy ___.","marroquí",["marroquía","español","francés"]],["Ella es de España, es ___.","española",["español","españoles","francesa"]],["París está en ___.","Francia",["España","Alemania","Marruecos"]],["Él es de Berlín, es ___.","alemán",["alemana","inglés","francés"]]],
+    build: [["Soy marroquí y vivo en Madrid","أنا مغربي وساكن فمدريد"],["Mi amiga es francesa","صاحبتي فرنساوية"]] },
+
+  // ---------- A1: القواعد ----------
+  { id: "a1-3", level: "A1", sec: "grammar", es: "El verbo SER", ar: "الفعل SER",
+    note: ["{SER} كنستعملوه للهوية، الجنسية، الخدمة، والوصف اللي ما كيتبدلش.",
+           "{yo soy, tú eres, él/ella es, nosotros somos, vosotros sois, ellos son}."],
+    vocab: [["yo soy","أنا"],["tú eres","نتا / نتي"],["él es","هو"],["ella es","هي"],["nosotros somos","حنا"],["ellos son","هوما"],["marroquí","مغربي"],["estudiante","طالب"],["profesor","أستاذ"],["alto","طويل"]],
+    fill: [["Yo ___ marroquí.","soy",["eres","es","son"]],["Ella ___ profesora.","es",["soy","somos","eres"]],["Nosotros ___ estudiantes.","somos",["son","soy","es"]],["Tú ___ muy alto.","eres",["es","soy","son"]]],
+    build: [["Yo soy de Marruecos","أنا من المغرب"],["Ellos son mis amigos","هوما صحابي"]] },
+  { id: "a1-4", level: "A1", sec: "grammar", es: "ESTAR y HAY", ar: "الفعل ESTAR و HAY",
+    note: ["{ESTAR} للبلاصة وللحالة المؤقتة: {estoy, estás, está, estamos, estáis, están}.",
+           "{Hay} معناها «كاين» ولا «كاينين»: {Hay un café aquí}."],
+    vocab: [["cansado","عيان"],["contento","فرحان"],["enfermo","مريض"],["en casa","فالدار"],["hay","كاين"],["la ciudad","المدينة"],["aquí","هنا"],["allí","لهيه"]],
+    fill: [["Estoy ___ casa.","en",["de","a","con"]],["Mi madre ___ cansada.","está",["es","hay","son"]],["___ un café aquí.","Hay",["Está","Es","Son"]],["¿Dónde ___ tú?","estás",["eres","hay","está"]]],
+    build: [["Estoy muy cansado hoy","أنا عيان بزاف اليوم"],["Hay una farmacia aquí","كاينة فرمسيان هنا"]] },
+  { id: "a1-6", level: "A1", sec: "grammar", es: "Presente regular", ar: "المضارع (-ar, -er, -ir)",
+    note: ["{hablar}: {hablo, hablas, habla, hablamos, habláis, hablan}.",
+           "{comer}: {como, comes, come, comemos, coméis, comen}.",
+           "{vivir}: {vivo, vives, vive, vivimos, vivís, viven}."],
+    vocab: [["hablar","هضر"],["comer","كلا"],["vivir","سكن / عاش"],["trabajar","خدم"],["estudiar","قرا"],["beber","شرب"],["escribir","كتب"],["aprender","تعلم"]],
+    fill: [["Yo ___ español. (hablar)","hablo",["habla","hablas","hablan"]],["Nosotros ___ en Rabat. (vivir)","vivimos",["vivo","viven","vivís"]],["Ella ___ pan. (comer)","come",["como","comes","comen"]],["Tú ___ mucho. (trabajar)","trabajas",["trabajo","trabaja","trabajan"]]],
+    build: [["Aprendo español cada día","كنتعلم الإسبانية كل نهار"],["Mi hermano trabaja en Tánger","خويا خدام فطنجة"]] },
+  { id: "a1-8", level: "A1", sec: "grammar", es: "El verbo GUSTAR", ar: "الفعل GUSTAR",
+    note: ["{me gusta} + حاجة وحدة: {Me gusta el té}. {me gustan} + بزاف: {Me gustan las frutas}.",
+           "{me, te, le, nos, os, les} = ليا، ليك، ليه، لينا، ليكم، ليهم."],
+    vocab: [["el pan","الخبز"],["el agua","الما"],["la leche","الحليب"],["el pollo","الدجاج"],["la fruta","الفاكهة"],["el pescado","الحوت"],["el té","أتاي"],["el arroz","الروز"]],
+    fill: [["Me ___ el té.","gusta",["gustan","gusto","gustas"]],["Me ___ las frutas.","gustan",["gusta","gusto","gustamos"]],["A mi padre ___ gusta el café.","le",["me","te","nos"]],["No me gusta ___ leche.","la",["el","los","las"]]],
+    build: [["Me gusta mucho el té","كيعجبني أتاي بزاف"],["Quiero un vaso de agua","بغيت كاس ديال الما"]] },
+
+  // ---------- A2 ----------
+  { id: "a2-1", level: "A2", es: "Pretérito indefinido", ar: "الماضي (حدث سالا)",
+    note: ["حدث سالا فوقت محدد ({ayer}, {el año pasado}).",
+           "{hablar}: {hablé, hablaste, habló, hablamos, hablasteis, hablaron}. {comer}: {comí, comiste, comió, comimos, comisteis, comieron}.",
+           "شاذين: {ir/ser} → {fui, fue}، {tener} → {tuve}، {hacer} → {hice}."],
+    vocab: [["ayer","البارح"],["anoche","البارح فالليل"],["la semana pasada","السيمانة اللي فاتت"],["el año pasado","العام اللي فات"],["fui","مشيت"],["tuve","كان عندي"],["hice","درت"],["vi","شفت"]],
+    fill: [["Ayer yo ___ con mi madre. (hablar)","hablé",["hablo","habló","hablaré"]],["El año pasado ___ a España. (ir, yo)","fui",["fue","voy","iré"]],["Ellos ___ paella anoche. (comer)","comieron",["comimos","comen","comió"]],["¿Qué ___ tú el domingo? (hacer)","hiciste",["hice","hizo","haces"]]],
+    build: [["Ayer fui al mercado","البارح مشيت للسوق"],["Anoche vi una película","البارح فالليل شفت فيلم"]] },
+  { id: "a2-2", level: "A2", es: "Pretérito imperfecto", ar: "الماضي (العادة والوصف)",
+    note: ["للعادات فالماضي: «كنت كندير».",
+           "{-ar} → {hablaba, hablabas, hablaba, hablábamos, hablabais, hablaban}. {-er/-ir} → {comía, vivía}.",
+           "شاذين: {ser} → {era}، {ir} → {iba}، {ver} → {veía}."],
+    vocab: [["de niño","فاش كنت صغير"],["siempre","ديما"],["a menudo","بزاف دالمرات"],["antes","قبل"],["jugaba","كنت كنلعب"],["era","كان"],["iba","كنت كنمشي"],["vivía","كنت ساكن"]],
+    fill: [["De niño, yo ___ al fútbol. (jugar)","jugaba",["juego","jugaré","jugaría"]],["Antes mi abuela ___ en el campo. (vivir)","vivía",["vive","vivirá","viviría"]],["Cuando era pequeño, ___ muy tímido. (ser)","era",["soy","seré","sería"]],["Siempre ___ al colegio a pie. (ir, nosotros)","íbamos",["iban","vamos","iremos"]]],
+    build: [["De niño vivía en Fez","فاش كنت صغير كنت ساكن ففاس"],["Siempre jugábamos en la calle","ديما كنا كنلعبو فالزنقة"]] },
+  { id: "a2-3", level: "A2", es: "Ir a + infinitivo", ar: "المستقبل القريب",
+    note: ["«غادي ندير» = {ir + a + infinitivo}.",
+           "{voy a, vas a, va a, vamos a, vais a, van a} + الفعل: {Voy a comer}."],
+    vocab: [["el fin de semana","الويكاند"],["esta noche","هاد الليلة"],["la próxima semana","السيمانة الجاية"],["pronto","قريب"],["comprar","شرى"],["visitar","زار"],["descansar","ترتاح"],["viajar","سافر"]],
+    fill: [["Esta noche ___ a estudiar. (yo)","voy",["va","vamos","iba"]],["¿Qué vas ___ hacer mañana?","a",["de","en","por"]],["Ellos ___ a visitar Madrid.","van",["va","vas","voy"]],["Vamos a ___ el fin de semana.","descansar",["descanso","descansamos","descansado"]]],
+    build: [["Voy a viajar a Sevilla","غادي نسافر لإشبيلية"],["Mañana vamos a comprar pan","غدا غادي نشريو الخبز"]] },
+  { id: "a2-4", level: "A2", es: "Los comparativos", ar: "المقارنة",
+    note: ["{más ... que} = كثر من. {menos ... que} = قل من. {tan ... como} = بحال.",
+           "شاذين: {mejor} (حسن)، {peor} (كفس)، {mayor} (كبر)، {menor} (صغر)."],
+    vocab: [["más","كثر"],["menos","قل"],["mejor","حسن"],["peor","كفس"],["mayor","كبر (فالعمر)"],["menor","صغر (فالعمر)"],["barato","رخيص"],["caro","غالي"]],
+    fill: [["Madrid es más grande ___ Toledo.","que",["como","de","a"]],["Mi hermano es tan alto ___ yo.","como",["que","de","más"]],["Este café es ___ que el otro. (bueno)","mejor",["bueno","buenísimo","mayor"]],["El tren cuesta 20€ y el avión 90€. El tren es ___ caro.","menos",["más","tan","mejor"]]],
+    build: [["El té es mejor que el café","أتاي حسن من القهوة"],["Mi casa es más grande","الدار ديالي كبر"]] },
+
+  // ---------- B1 ----------
+  { id: "b1-1", level: "B1", es: "El futuro simple", ar: "المستقبل",
+    note: ["الفعل كامل + {é, ás, á, emos, éis, án}: {hablaré, comerás}.",
+           "شاذين: {tener} → {tendré}، {hacer} → {haré}، {poder} → {podré}، {salir} → {saldré}، {decir} → {diré}، {venir} → {vendré}."],
+    vocab: [["tendré","غادي يكون عندي"],["haré","غادي ندير"],["podré","غادي نقدر"],["saldré","غادي نخرج"],["diré","غادي نقول"],["vendré","غادي نجي"],["algún día","شي نهار"],["el futuro","المستقبل"]],
+    fill: [["Mañana ___ calor. (hacer)","hará",["hizo","hacía","hecho"]],["El año que viene ___ un coche. (tener, yo)","tendré",["tenré","tuve","tenía"]],["¿___ venir a la fiesta? (poder, tú)","Podrás",["Pudiste","Podías","Poderás"]],["Algún día ___ a Madrid. (ir, nosotros)","iremos",["fuimos","íbamos","iriemos"]]],
+    build: [["Algún día hablaré español perfectamente","شي نهار غادي نهضر الإسبانية مزيان"],["Te diré la verdad","غادي نقول ليك الحقيقة"]] },
+  { id: "b1-2", level: "B1", es: "El condicional", ar: "الشرطي",
+    note: ["الفعل كامل + {ía, ías, ía, íamos, íais, ían}: {viajaría}.",
+           "للنصيحة ولطلب بالأدب: {¿Podrías...?}، {Deberías...}، {Yo que tú, iría...}."],
+    vocab: [["me gustaría","كنتمنى"],["podrías","واش تقدر"],["deberías","خاصك"],["yo que tú","لو كنت بلاصتك"],["sería","غادي يكون"],["tendría","غادي يكون عندي"],["haría","غادي ندير"],["querría","كنت نبغي"]],
+    fill: [["Si tuviera dinero, me ___ viajar a México.","gustaría",["gusta","gustó","gustará"]],["¿___ abrir la ventana, por favor? (poder, tú)","Podrías",["Pudiste","Puedo","Podido"]],["Yo que tú, ___ al médico. (ir)","iría",["voy","fui","iba"]],["Deberías ___ más agua.","beber",["bebes","bebido","bebiendo"]]],
+    build: [["Me gustaría aprender a cocinar","كنتمنى نتعلم نطيب"],["Deberías descansar un poco","خاصك ترتاح شوية"]] },
+  { id: "b1-3", level: "B1", es: "Presente de subjuntivo", ar: "صيغة التمني (subjuntivo)",
+    note: ["كيجي من بعد: {quiero que}، {espero que}، {ojalá}، {es importante que}.",
+           "{-ar} كتولي {e}: {hable}. {-er/-ir} كتولي {a}: {coma, viva}.",
+           "شاذين: {ser} → {sea}، {ir} → {vaya}، {tener} → {tenga}، {hacer} → {haga}."],
+    vocab: [["ojalá","إن شاء الله / نتمنى"],["espero que","كنتمنى بلي"],["quiero que","بغيت (شي واحد يدير)"],["es importante que","مهم بلي"],["sea","يكون"],["vaya","يمشي"],["tenga","يكون عندو"],["haga","يدير"]],
+    fill: [["Ojalá ___ buen tiempo mañana. (hacer)","haga",["hace","hará","hizo"]],["Quiero que tú ___ conmigo. (venir)","vengas",["vienes","vendrás","venir"]],["Espero que ___ bien. (estar, tú)","estés",["estás","estar","estarás"]],["Es importante que ___ cada día. (estudiar, nosotros)","estudiemos",["estudiamos","estudiar","estudiaremos"]]],
+    build: [["Ojalá tengas suerte","إن شاء الله يكون عندك الزهر"],["Quiero que vengas mañana","بغيتك تجي غدا"]] },
+  { id: "b1-4", level: "B1", es: "Pretérito perfecto", ar: "الماضي القريب (he hecho)",
+    note: ["{he, has, ha, hemos, habéis, han} + {-ado / -ido}: {he comido}.",
+           "كنستعملوه مع {hoy}، {esta semana}، {ya}، {todavía no}، {nunca}. أما {ayer} فكتاخد {indefinido}.",
+           "شاذين: {hecho, visto, dicho, escrito, puesto, vuelto, abierto}."],
+    vocab: [["ya","ديجا"],["todavía no","مازال"],["nunca","عمري"],["alguna vez","شي مرة"],["he visto","شفت"],["has hecho","درتي"],["hemos dicho","قلنا"],["han escrito","كتبو"]],
+    fill: [["Hoy ___ comido mucho. (yo)","he",["ha","has","hemos"]],["¿___ estado alguna vez en Granada? (tú)","Has",["He","Ha","Han"]],["Todavía no he ___ la carta. (escribir)","escrito",["escribido","escribí","escribo"]],["Ayer ___ a mis abuelos. (visitar, yo)","visité",["he visitado","visito","visitaré"]]],
+    build: [["Nunca he visto el mar","عمري ما شفت البحر"],["Ya hemos terminado","ديجا سالينا"]] },
+
+  // ---------- B2 ----------
+  { id: "b2-1", level: "B2", es: "Oraciones condicionales", ar: "الجمل الشرطية (si)",
+    note: ["ممكن: {Si llueve, me quedaré en casa.}",
+           "خيالي: {Si tuviera dinero, viajaría.} ({tuviera, fuera, pudiera, hablara})",
+           "فات الحال: {Si hubiera estudiado, habría aprobado.}"],
+    vocab: [["si","إلا / لو"],["tuviera","لو كان عندي"],["fuera","لو كنت"],["pudiera","لو قدرت"],["hubiera","لو كان (درت)"],["habría","كون كان"],["aprobar","نجح فالامتحان"],["suspender","سقط فالامتحان"]],
+    fill: [["Si ___ tiempo, iría contigo. (tener, yo)","tuviera",["tengo","tendría","tenía"]],["Si llueve mañana, ___ en casa. (quedarse, yo)","me quedaré",["me quedaría","me quedara","me quedé"]],["Si hubiera estudiado, ___ aprobado.","habría",["había","habré","he"]],["Si yo ___ tú, no lo haría. (ser)","fuera",["soy","sería","era"]]],
+    build: [["Si tuviera dinero, compraría una casa","لو كان عندي الفلوس نشري دار"],["Si fuera tú, hablaría con él","لو كنت بلاصتك نهضر معاه"]] },
+  { id: "b2-2", level: "B2", es: "La pasiva y el SE", ar: "المبني للمجهول و SE",
+    note: ["{ser} + participio + {por}: {La casa fue construida por mi abuelo.}",
+           "{se} للعام: {Se habla español}، {Se venden pisos}. وللحوادث: {Se me olvidó}."],
+    vocab: [["fue construido","تبنى"],["se vende","كيتباع"],["se alquila","للكرا"],["se habla","كيتهضر"],["se me olvidó","تنسا ليا"],["por","من طرف"],["el piso","البرطما"],["la ley","القانون"]],
+    fill: [["Aquí se ___ español.","habla",["hablan","hablo","hablado"]],["Se ___ pisos en el centro.","venden",["vende","vendo","vendido"]],["El libro fue escrito ___ Cervantes.","por",["para","con","en"]],["Se ___ olvidó el móvil en casa.","me",["mi","yo","lo"]]],
+    build: [["Se alquila piso en Madrid","برطما للكرا فمدريد"],["La carta fue enviada ayer","البرية تصيفطات البارح"]] },
+  { id: "b2-3", level: "B2", es: "Los conectores", ar: "أدوات الربط",
+    note: ["باش تربط الأفكار وتكتب بحال شي واحد عندو مستوى.",
+           "{aunque} + subjuntivo ملي الحاجة ماشي أكيدة: {Aunque llueva, saldré.}"],
+    vocab: [["sin embargo","ولكن / رغم هادشي"],["por lo tanto","إذن"],["además","وزيد على هادشي"],["aunque","واخا"],["en cambio","بالعكس"],["a pesar de","رغم"],["es decir","يعني"],["por eso","على هادشي"]],
+    fill: [["Estaba cansado; ___, fue a trabajar.","sin embargo",["por lo tanto","además","es decir"]],["Llovía mucho; ___, nos quedamos en casa.","por lo tanto",["sin embargo","aunque","en cambio"]],["___ hace frío, voy a salir.","Aunque",["Por eso","Además","Es decir"]],["Mi hermano es muy serio; yo, ___, soy muy alegre.","en cambio",["por eso","además","es decir"]]],
+    build: [["Aunque llueva iré a la playa","واخا تشتا غادي نمشي للبحر"],["A pesar del frío salimos","رغم البرد خرجنا"]] },
+
+  // ---------- C1 ----------
+  { id: "c1-1", level: "C1", es: "Expresiones idiomáticas", ar: "التعابير",
+    note: ["هاد التعابير ما كتترجمش كلمة بكلمة. حفظها كاملة."],
+    vocab: [["estar en las nubes","سارح / مامركزش"],["tomar el pelo","ضحك على شي واحد"],["costar un ojo de la cara","غالي بزاف"],["echar una mano","عاون"],["meter la pata","دار شي غلطة"],["no tener pelos en la lengua","كيقول اللي فقلبو"],["ser pan comido","ساهل بزاف"],["estar hasta las narices","عيا / طلع ليه الدم"]],
+    fill: [["Este examen es pan ___.","comido",["duro","blanco","caliente"]],["¿Me echas una ___ con las maletas?","mano",["pata","cara","nube"]],["Este coche cuesta un ojo de la ___.","cara",["mano","cabeza","boca"]],["Perdón, metí la ___.","pata",["mano","pierna","nariz"]]],
+    build: [["No me tomes el pelo","ماتضحكش عليا"],["Siempre estás en las nubes","ديما سارح"]] },
+  { id: "c1-2", level: "C1", es: "Subjuntivo avanzado", ar: "subjuntivo متقدم",
+    note: ["{cuando} + subjuntivo للمستقبل: {Cuando tenga tiempo, te llamaré.}",
+           "{como si} + imperfecto: {Habla como si lo supiera todo.}",
+           "{para que}، {sin que}، {antes de que}، {a no ser que} ديما + subjuntivo."],
+    vocab: [["como si","بحال إلا"],["en cuanto","غير"],["a no ser que","إلا إلا"],["siempre que","بشرط"],["para que","باش"],["sin que","بلا ما"],["antes de que","قبل ما"],["por mucho que","واخا بزاف"]],
+    fill: [["Habla como si lo ___ todo. (saber)","supiera",["sabe","sabría","sepa"]],["Te llamaré en cuanto ___ a casa. (llegar, yo)","llegue",["llego","llegaré","llegué"]],["Te lo explico para que lo ___. (entender, tú)","entiendas",["entiendes","entenderás","entender"]],["Saldremos antes de que ___. (llover)","llueva",["llueve","lloverá","llovía"]]],
+    build: [["Cuando tenga tiempo te llamaré","منين يكون عندي الوقت نعيط ليك"],["Lo hizo sin que nadie lo supiera","دارها بلا ما حد يعرف"]] },
+  { id: "c1-3", level: "C1", es: "El registro formal", ar: "اللغة الرسمية",
+    note: ["فالبرية والإيميل الرسمي كنستعملو {usted} ماشي {tú}.",
+           "البداية: {Estimado/a señor/a}. النهاية: {Le saluda atentamente}."],
+    vocab: [["estimado señor","السيد المحترم"],["atentamente","مع الاحترام"],["adjunto","فالمرفق"],["a la espera de","فانتظار"],["le agradecería","نكون ممنون ليك"],["solicitar","طلب"],["el currículum","السيرة الذاتية"],["la entrevista","المقابلة"]],
+    fill: [["Le ___ que me enviara la información.","agradecería",["agradecer","agradecido","agradecimiento"]],["___ le envío mi currículum.","Adjunto",["Estimado","Atentamente","Solicitar"]],["Quedo a la ___ de su respuesta.","espera",["esperanza","esperar","espero"]],["Me dirijo a usted para ___ información.","solicitar",["solicito","solicitud","solicitado"]]],
+    build: [["Quedo a la espera de su respuesta","كنتسنى الجواب ديالكم"],["Le saluda atentamente","مع فائق الاحترام"]] }
+];
+
+/* ============ التخزين ============ */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+let scores = store.get("aula.scores", {});
+let mine = store.get("aula.mine", []);
+let level = store.get("aula.level", "A1");
+
+/* ============ أدوات ============ */
+const $app = document.getElementById("app");
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = s => esc(s).replace(/\{([^}]+)\}/g, '<b class="es" lang="es">$1</b>');
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const uniq = a => [...new Set(a)];
+const SPEAK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>';
+function speak(t) {
+  try {
+    if (!("speechSynthesis" in window)) return;
+    const u = new SpeechSynthesisUtterance(t.replace(/___/g, "")); u.lang = "es-ES"; u.rate = 0.9;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  } catch (e) {}
+}
+const allLessons = () => LESSONS.concat(mine);
+const lessonsOf = lv => allLessons().filter(l => l.level === lv);
+const findLesson = id => allLessons().find(l => l.id === id);
+
+/* ============ الدروس ديالك (من الفيديو) ============ */
+function parseMine(text) {
+  const vocab = [], build = [];
+  text.split("\n").forEach(line => {
+    const i = line.indexOf("=");
+    if (i < 0) return;
+    const es = line.slice(0, i).trim(), ar = line.slice(i + 1).trim();
+    if (!es || !ar) return;
+    (es.split(/\s+/).length >= 3 ? build : vocab).push([es, ar]);
+  });
+  const words = uniq(vocab.map(v => v[0]).concat(build.flatMap(b => b[0].split(/\s+/).map(w => w.replace(/[¿?¡!.,;:]/g, "")))).filter(Boolean));
+  const fill = [];
+  build.forEach(([es]) => {
+    const toks = es.split(/\s+/);
+    let k = 0;
+    toks.forEach((t, j) => { if (t.replace(/[¿?¡!.,;:]/g, "").length > toks[k].replace(/[¿?¡!.,;:]/g, "").length) k = j; });
+    const ans = toks[k].replace(/[¿?¡!.,;:]/g, "");
+    const d = shuffle(words.filter(w => w.toLowerCase() !== ans.toLowerCase())).slice(0, 3);
+    if (d.length) fill.push([toks.map((t, j) => j === k ? t.replace(ans, "___") : t).join(" "), ans, d]);
+  });
+  return { vocab, build, fill };
+}
+
+/* ============ التمارين ============ */
+function makeQuiz(lesson) {
+  const sameLevel = lessonsOf(lesson.level).flatMap(l => l.vocab || []);
+  const pool = (lesson.vocab || []).concat(sameLevel);
+  const pick = (field, not) => shuffle(uniq(pool.map(p => p[field]).filter(x => x !== not))).slice(0, 3);
+  const v = shuffle((lesson.vocab || []).slice());
+  const qs = [];
+  const nFwd = v.length <= 4 ? v.length : 4;
+  v.slice(0, nFwd).forEach(([es, ar]) => qs.push({ type: "mcq", kind: "شنو معنى هاد الكلمة؟", q: es, qEs: true, answer: ar, options: shuffle([ar, ...pick(1, ar)]), optEs: false }));
+  (v.length <= 4 ? v : v.slice(4, 7)).forEach(([es, ar]) => qs.push({ type: "mcq", kind: "كيفاش كتقولها بالإسبانية؟", q: ar, qEs: false, answer: es, options: shuffle([es, ...pick(0, es)]), optEs: true }));
+  (lesson.fill || []).forEach(([s, a, d]) => qs.push({ type: "fill", kind: "عمّر الفراغ", q: s, answer: a, options: shuffle([a, ...d]), optEs: true }));
+  (lesson.build || []).forEach(([es, ar]) => qs.push({ type: "build", kind: "رتب الكلمات باش تكتب الجملة", q: ar, answer: es, tokens: shuffle(es.split(/\s+/).map((t, i) => ({ t, i }))) }));
+  return shuffle(qs).slice(0, 12);
+}
+
+/* ============ الحالة ============ */
+let view = { name: "home" };
+let quiz = null, cards = null, pendingDelete = null;
+
+function go(v) { view = v; render(); window.scrollTo(0, 0); }
+
+/* ============ الصفحات ============ */
+function renderHome() {
+  const all = allLessons();
+  const done = all.filter(l => scores[l.id] != null).length;
+  const pct = all.length ? Math.round(done / all.length * 100) : 0;
+  const lv = LEVELS.find(l => l.id === level);
+  const list = lessonsOf(level);
+  return `
+  <header class="top">
+    <div class="brand" lang="es">Aula de Español<span class="mark">.</span></div>
+    <p class="sub">التمارين ديال الدروس ديالك، من A1 حتى C1، والشرح بالدارجة.</p>
+    <div class="meter"><span>كملتي ${done} من ${all.length} درس</span><span class="bar"><i style="width:${pct}%"></i></span></div>
+  </header>
+  <nav class="levels" aria-label="المستويات">
+    ${LEVELS.map(l => `<button class="lvl" data-act="level" data-id="${l.id}" aria-pressed="${l.id === level}"><b>${l.id}</b><span>${l.name}</span></button>`).join("")}
+  </nav>
+  <div class="lvl-head"><h2>${esc(lv.ar)} <span class="es" lang="es">· ${lv.name}</span></h2><small>${list.length} درس</small></div>
+  ${SECTIONS.map(sec => {
+    const items = list.filter(l => (l.mine ? "mine" : (l.sec || "")) === sec.id);
+    if (!items.length) return "";
+    const head = list.some(l => (l.mine ? "mine" : (l.sec || "")) !== sec.id) && sec.title ? `<h3 class="sec" style="margin-top:18px">${sec.title}</h3>` : "";
+    return head + `<div class="list">${items.map((l, i) => {
+      const s = scores[l.id];
+      const pill = s == null ? '<span class="pill new">جديد</span>' : `<span class="pill ${s >= 80 ? "ok" : "mid"}">${s}%</span>`;
+      return `<button class="row ${l.mine ? "mine" : ""}" data-act="open" data-id="${l.id}"><span class="num">${i + 1}</span><span class="t"><span class="es" lang="es">${esc(l.es)}</span><small>${esc(l.ar)}</small></span>${pill}</button>`;
+    }).join("")}</div>`;
+  }).join("")}
+  <button class="add-row" data-act="add"><b>+ زيد درس من الفيديو</b><small>كتب الكلمات والجمل اللي تعلمتي فالفيديو، والتطبيق يصاوب منهم تمارين.</small></button>`;
+}
+
+function renderLesson(l) {
+  const lv = LEVELS.find(x => x.id === l.level);
+  const hasEx = (l.vocab || []).length + (l.build || []).length > 0;
+  return `
+  <button class="back" data-act="home">→ رجع للدروس</button>
+  <div class="eyebrow">${l.level} · ${lv.name}</div>
+  <h1 class="lesson-title" lang="es">${esc(l.es)}</h1>
+  <p class="lesson-ar">${esc(l.ar)}</p>
+  ${l.tg ? `<a class="tg" href="${esc(l.tg)}" target="_blank" rel="noopener">شوف الفيديو ديال هاد الدرس فالتيليجرام ←</a>` : ""}
+  ${(l.note || []).length ? `<section class="note"><h3>الشرح</h3>${l.note.map(n => `<p>${fmt(n)}</p>`).join("")}</section>` : ""}
+  <div class="actions">
+    <button class="btn" data-act="quiz" data-id="${l.id}" ${hasEx ? "" : "disabled"}>تمرّن</button>
+    <button class="btn ghost" data-act="cards" data-id="${l.id}" ${(l.vocab || []).length ? "" : "disabled"}>بطاقات المراجعة</button>
+  </div>
+  ${(l.vocab || []).length ? `<h3 class="sec">الكلمات</h3><div class="vocab">${l.vocab.map(([es, ar]) => `<div class="vrow"><button class="say" data-act="say" data-t="${esc(es)}" aria-label="سمع ${esc(es)}">${SPEAK}</button><span class="es" lang="es">${esc(es)}</span><span class="ar">${esc(ar)}</span></div>`).join("")}</div>` : ""}
+  ${(l.build || []).length ? `<h3 class="sec" style="margin-top:20px">الجمل</h3><div class="vocab">${l.build.map(([es, ar]) => `<div class="vrow"><button class="say" data-act="say" data-t="${esc(es)}" aria-label="سمع الجملة">${SPEAK}</button><span class="es" lang="es">${esc(es)}</span><span class="ar">${esc(ar)}</span></div>`).join("")}</div>` : ""}
+  ${l.mine ? `<div style="margin-top:18px;display:flex;gap:16px;flex-wrap:wrap"><button class="danger" style="color:var(--accent)" data-act="edit" data-id="${l.id}">بدّل الدرس</button><button class="danger" data-act="del" data-id="${l.id}">${pendingDelete === l.id ? "كليكي مرة أخرى باش تمسحو" : "مسح هاد الدرس"}</button></div>` : ""}`;
+}
+
+function renderQuiz() {
+  const q = quiz.qs[quiz.i];
+  const n = quiz.qs.length;
+  const progress = Math.round((quiz.i + (quiz.answered ? 1 : 0)) / n * 100);
+  let body = "";
+  if (q.type === "mcq" || q.type === "fill") {
+    let prompt;
+    if (q.type === "fill") {
+      const filled = quiz.answered ? `<span class="blank">${esc(q.answer)}</span>` : '<span class="blank">&nbsp;</span>';
+      prompt = `<div class="prompt es" lang="es"><span>${esc(q.q).replace("___", filled)}</span></div>`;
+    } else {
+      prompt = `<div class="prompt ${q.qEs ? "es" : ""}" ${q.qEs ? 'lang="es"' : ""}>${q.qEs ? `<button class="say" data-act="say" data-t="${esc(q.q)}" aria-label="سمع">${SPEAK}</button>` : ""}<span>${esc(q.q)}</span></div>`;
+    }
+    body = prompt + `<div class="opts">${q.options.map((o, i) => {
+      let cls = "";
+      if (quiz.answered) { if (o === q.answer) cls = "right"; else if (i === quiz.picked) cls = "wrong"; }
+      return `<button class="opt ${q.optEs ? "es" : ""} ${cls}" ${q.optEs ? 'lang="es"' : ""} data-act="pick" data-i="${i}" ${quiz.answered ? "disabled" : ""}>${esc(o)}</button>`;
+    }).join("")}</div>`;
+  } else {
+    body = `<div class="prompt">${esc(q.q)}</div>
+      <div class="slots" lang="es">${quiz.chosen.map((k, j) => `<button class="tok" data-act="untok" data-j="${j}" ${quiz.answered ? "disabled" : ""}>${esc(q.tokens[k].t)}</button>`).join("")}</div>
+      <div class="bank" lang="es">${q.tokens.map((tk, k) => `<button class="tok ${quiz.chosen.includes(k) ? "used" : ""}" data-act="tok" data-k="${k}" ${quiz.answered ? "disabled" : ""}>${esc(tk.t)}</button>`).join("")}</div>
+      ${quiz.answered ? "" : `<button class="btn check" data-act="checkbuild" ${quiz.chosen.length ? "" : "disabled"}>تأكد</button>`}`;
+  }
+  let fb = "";
+  if (quiz.answered) {
+    const last = quiz.i === n - 1;
+    fb = quiz.ok
+      ? `<div class="feedback good" role="status"><b class="good-t">صحيح! مزيان</b><button class="btn" data-act="next">${last ? "شوف النتيجة" : "كمل"}</button></div>`
+      : `<div class="feedback bad" role="status"><b class="bad-t">ماشي هي هادي</b><span>الجواب الصحيح: <b ${q.optEs === false ? "" : 'class="es" lang="es"'}>${esc(q.answer)}</b></span><button class="btn" data-act="next">${last ? "شوف النتيجة" : "كمل"}</button></div>`;
+  }
+  return `
+  <div class="qtop"><button class="close" data-act="leave" aria-label="خرج">✕ خرج</button><span class="bar"><i style="width:${progress}%"></i></span><span class="count">${quiz.i + 1}/${n}</span></div>
+  <div class="kind">${esc(q.kind)}</div>
+  ${body}${fb}`;
+}
+
+function renderResult() {
+  const n = quiz.qs.length, pct = Math.round(quiz.score / n * 100);
+  const msg = pct === 100 ? "ممتاز! جاوبتي على كلشي صحيح." : pct >= 80 ? "مزيان بزاف، كمل هكا." : pct >= 50 ? "ماشي خايب. عاود التمرين باش تثبت." : "عاود قرا الشرح والكلمات، ومن بعد عاود التمرين.";
+  return `
+  <div class="result">
+    <div class="score">${quiz.score}<small>/${n}</small></div>
+    <h2>${pct}%</h2>
+    <p>${msg}</p>
+  </div>
+  ${quiz.mistakes.length ? `<div class="review"><h3 class="sec">راجع هادو</h3><div class="vocab">${quiz.mistakes.map(m => `<div class="vrow"><button class="say" data-act="say" data-t="${esc(m.es)}" aria-label="سمع">${SPEAK}</button><span class="es" lang="es">${esc(m.es)}</span><span class="ar">${esc(m.ar)}</span></div>`).join("")}</div></div>` : ""}
+  <div class="actions" style="margin-top:20px">
+    <button class="btn" data-act="quiz" data-id="${quiz.lesson.id}">عاود التمرين</button>
+    <button class="btn ghost" data-act="open" data-id="${quiz.lesson.id}">رجع للدرس</button>
+  </div>`;
+}
+
+function renderCards() {
+  if (!cards.queue.length) {
+    return `<button class="back" data-act="open" data-id="${cards.lesson.id}">→ رجع للدرس</button>
+      <div class="result"><div class="score">${cards.total}<small>/${cards.total}</small></div><h2>سالاو البطاقات</h2><p>عرفتي جميع الكلمات ديال هاد الدرس.</p></div>
+      <div class="actions"><button class="btn" data-act="quiz" data-id="${cards.lesson.id}">دوز للتمرين</button><button class="btn ghost" data-act="cards" data-id="${cards.lesson.id}">عاود البطاقات</button></div>`;
+  }
+  const [es, ar] = cards.queue[0];
+  return `
+  <div class="qtop"><button class="close" data-act="open" data-id="${cards.lesson.id}">✕ خرج</button><span class="bar"><i style="width:${Math.round((cards.total - cards.queue.length) / cards.total * 100)}%"></i></span><span class="count">${cards.total - cards.queue.length}/${cards.total}</span></div>
+  <button class="card" data-act="flip">
+    <span class="front" lang="es">${esc(es)}</span>
+    ${cards.flipped ? `<span class="back-t">${esc(ar)}</span>` : "<small>كليكي باش تشوف المعنى</small>"}
+  </button>
+  <div class="actions">
+    <button class="btn ghost" data-act="say" data-t="${esc(es)}">سمع النطق</button>
+    ${cards.flipped ? '<span></span>' : '<button class="btn ghost" data-act="flip">شوف المعنى</button>'}
+  </div>
+  ${cards.flipped ? `<div class="actions"><button class="btn" data-act="know">عرفتها</button><button class="btn ghost" data-act="again">عاودها</button></div>` : ""}`;
+}
+
+function renderAdd() {
+  const ed = view.editId ? findLesson(view.editId) : null;
+  const text = ed ? (ed.vocab || []).concat(ed.build || []).map(([a, b]) => `${a} = ${b}`).join("\n") : "";
+  return `
+  <button class="back" data-act="${ed ? "open" : "home"}" data-id="${ed ? ed.id : ""}">→ رجع</button>
+  <h1 class="lesson-title" style="direction:rtl;text-align:right">${ed ? "بدّل الدرس" : "زيد درس من الفيديو"}</h1>
+  <p class="lesson-ar">شوف الفيديو، وكتب هنا الكلمات والجمل اللي تعلمتي. التطبيق كيصاوب منهم التمارين.</p>
+  <form class="form" id="addForm">
+    <label>المستوى
+      <select id="f-level">${LEVELS.map(l => `<option value="${l.id}" ${(ed ? ed.level : level) === l.id ? "selected" : ""}>${l.id} · ${l.name}</option>`).join("")}</select>
+    </label>
+    <label>العنوان ديال الدرس (بحال العنوان ديال الفيديو)
+      <input id="f-title" lang="es" dir="ltr" value="${ed ? esc(ed.es) : ""}" placeholder="Lección 3 - Los colores">
+    </label>
+    <label>المعنى ديال العنوان (اختياري)
+      <input id="f-ar" value="${ed ? esc(ed.ar) : ""}" placeholder="الألوان">
+    </label>
+    <div class="help">كتب كل كلمة فسطر: الإسبانية <code>=</code> المعنى. مثلا:<br><code>rojo = حمر</code><br><code>azul = زرق</code><br><code>El coche es rojo = الطوموبيل حمرة</code><br>الجمل اللي فيها 3 كلمات ولا كثر كيوليو تمارين ديال الترتيب وعمّر الفراغ.</div>
+    <label>الكلمات والجمل
+      <textarea id="f-text" lang="es" placeholder="rojo = حمر&#10;azul = زرق&#10;verde = خضر&#10;El coche es rojo = الطوموبيل حمرة">${esc(text)}</textarea>
+    </label>
+    <p class="err" id="f-err" hidden></p>
+    <button class="btn" type="submit">${ed ? "سجل التبديلات" : "سجل الدرس"}</button>
+  </form>`;
+}
+
+function render() {
+  let html = "";
+  if (view.name === "home") html = renderHome();
+  else if (view.name === "lesson") { const l = findLesson(view.id); html = l ? renderLesson(l) : renderHome(); }
+  else if (view.name === "quiz") html = renderQuiz();
+  else if (view.name === "result") html = renderResult();
+  else if (view.name === "cards") html = renderCards();
+  else if (view.name === "add") html = renderAdd();
+  $app.innerHTML = html;
+}
+
+/* ============ الأحداث ============ */
+function finishAnswer(ok, q) {
+  quiz.answered = true; quiz.ok = ok;
+  if (ok) quiz.score++;
+  else {
+    let es, ar;
+    if (q.type === "mcq") { es = q.optEs ? q.answer : q.q; ar = q.optEs ? q.q : q.answer; }
+    else if (q.type === "fill") { es = q.q.replace("___", q.answer); ar = "(" + q.answer + ")"; }
+    else { es = q.answer; ar = q.q; }
+    quiz.mistakes.push({ es, ar });
+  }
+  render();
+}
+
+$app.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]");
+  if (!b || b.disabled) return;
+  const act = b.dataset.act, id = b.dataset.id;
+  if (act !== "del") pendingDelete = null;
+  switch (act) {
+    case "home": go({ name: "home" }); break;
+    case "level": level = id; store.set("aula.level", level); render(); break;
+    case "open": go({ name: "lesson", id }); break;
+    case "add": go({ name: "add" }); break;
+    case "edit": go({ name: "add", editId: id }); break;
+    case "say": speak(b.dataset.t); break;
+    case "quiz": { const l = findLesson(id); quiz = { lesson: l, qs: makeQuiz(l), i: 0, score: 0, answered: false, chosen: [], mistakes: [] }; go({ name: "quiz" }); break; }
+    case "leave": go({ name: "lesson", id: quiz.lesson.id }); break;
+    case "pick": { const q = quiz.qs[quiz.i]; quiz.picked = +b.dataset.i; finishAnswer(q.options[quiz.picked] === q.answer, q); break; }
+    case "tok": quiz.chosen.push(+b.dataset.k); render(); break;
+    case "untok": quiz.chosen.splice(+b.dataset.j, 1); render(); break;
+    case "checkbuild": { const q = quiz.qs[quiz.i]; const said = quiz.chosen.map(k => q.tokens[k].t).join(" "); finishAnswer(said === q.answer, q); break; }
+    case "next":
+      if (quiz.i < quiz.qs.length - 1) { quiz.i++; quiz.answered = false; quiz.chosen = []; quiz.picked = null; render(); window.scrollTo(0, 0); }
+      else {
+        const pct = Math.round(quiz.score / quiz.qs.length * 100);
+        scores[quiz.lesson.id] = Math.max(pct, scores[quiz.lesson.id] || 0); store.set("aula.scores", scores);
+        go({ name: "result" });
+      }
+      break;
+    case "cards": { const l = findLesson(id); cards = { lesson: l, queue: shuffle(l.vocab.slice()), total: l.vocab.length, flipped: false }; go({ name: "cards" }); break; }
+    case "flip": if (!cards.flipped) { cards.flipped = true; speak(cards.queue[0][0]); render(); } break;
+    case "know": cards.queue.shift(); cards.flipped = false; render(); break;
+    case "again": cards.queue.push(cards.queue.shift()); cards.flipped = false; render(); break;
+    case "del":
+      if (pendingDelete === id) {
+        mine = mine.filter(l => l.id !== id); store.set("aula.mine", mine);
+        delete scores[id]; store.set("aula.scores", scores); pendingDelete = null; go({ name: "home" });
+      } else { pendingDelete = id; render(); }
+      break;
+  }
+});
+
+$app.addEventListener("submit", e => {
+  e.preventDefault();
+  const err = document.getElementById("f-err");
+  const title = document.getElementById("f-title").value.trim();
+  const ar = document.getElementById("f-ar").value.trim();
+  const lv = document.getElementById("f-level").value;
+  const parsed = parseMine(document.getElementById("f-text").value);
+  if (!title) { err.textContent = "كتب العنوان ديال الدرس."; err.hidden = false; return; }
+  if (parsed.vocab.length + parsed.build.length < 2) { err.textContent = "زيد على الأقل جوج سطور بهاد الشكل: rojo = حمر"; err.hidden = false; return; }
+  const lesson = { id: view.editId || "mine-" + Date.now(), level: lv, es: title, ar: ar || "درس من الفيديو", note: [], mine: true, ...parsed };
+  if (view.editId) mine = mine.map(l => l.id === view.editId ? lesson : l); else mine.push(lesson);
+  store.set("aula.mine", mine);
+  level = lv; store.set("aula.level", level);
+  go({ name: "lesson", id: lesson.id });
+});
+
+render();
+</script>
