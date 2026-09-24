@@ -1253,7 +1253,7 @@ function renderText() {
     <p>3. «سمع وعاود»: كيقرا جملة ويتسنى حتى تعاودها نتا بصوت عالي.</p></section>
   <div id="rctl" class="rctl">${readCtlHTML()}</div>
   <div class="reading" lang="es">
-    ${t.sentences.map(([es, ar], i) => `<p class="sent ${i === r.cur ? "on" : ""}" data-act="sent" data-i="${i}"><span class="es">${esc(es)}</span>${r.showAr ? `<span class="tr" lang="ar" dir="rtl">${esc(ar)}</span>` : ""}</p>`).join("")}
+    ${t.sentences.map(([es, ar], i) => `<p class="sent ${i === r.cur ? "on" : ""} ${i === r.cur && r.turn ? "turn" : ""}" data-act="sent" data-i="${i}"><span class="es">${esc(es)}</span>${r.showAr ? `<span class="tr" lang="ar" dir="rtl">${esc(ar)}</span>` : ""}</p>`).join("")}
   </div>
   <h3 class="sec" style="margin-top:26px">فهمتي النص؟</h3>
   <div class="rqs">
