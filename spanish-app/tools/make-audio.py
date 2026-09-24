@@ -51,8 +51,13 @@ def synth(job):
     if os.path.exists(path):
         return
     if _k is None:
+        import onnxruntime as ort
         from kokoro_onnx import Kokoro
-        _k = Kokoro(os.path.join(model_dir, "kokoro-v1.0.onnx"), os.path.join(model_dir, "voices-v1.0.bin"))
+        opts = ort.SessionOptions()
+        opts.intra_op_num_threads = 1  # 4 عمليات × خيط واحد، باش ما يتزاحموش على المعالج
+        opts.inter_op_num_threads = 1
+        sess = ort.InferenceSession(os.path.join(model_dir, "kokoro-v1.0.onnx"), opts, providers=["CPUExecutionProvider"])
+        _k = Kokoro.from_session(sess, os.path.join(model_dir, "voices-v1.0.bin"))
     samples, sr = _k.create(spoken(text), voice=VOICE, speed=SPEED[mode], lang="es")
     assert sr == SR
     sf.write(path, samples, sr)
